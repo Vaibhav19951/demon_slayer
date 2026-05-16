@@ -1,4 +1,11 @@
 module.exports = (bot) => {
+
+    bot.onText(/\/start/, async (msg) => {
+        // ... leave your existing message/caption/markdown code here exactly as it was ...
+    });
+  console.log("Start command loaded!");
+  
+module.exports = (bot) => {
   bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
 
