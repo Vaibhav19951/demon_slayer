@@ -1,28 +1,34 @@
-module.exports = (bot) => {
+const TelegramBot = require("node-telegram-bot-api");
+require("dotenv").config();
 
-    bot.onText(/\/start/, async (msg) => {
-        // ... leave your existing message/caption/markdown code here exactly as it was ...
-    });
-  console.log("Start command loaded!");
-  
-module.exports = (bot) => {
-  bot.onText(/\/start/, async (msg) => {
-    const chatId = msg.chat.id;
+const bot = new TelegramBot(process.env.BOT_TOKEN, {
+  polling: true
+});
 
-    await bot.sendPhoto(
+bot.onText(/\/start/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  try {
+    await bot.sendVideo(
       chatId,
-      "https://wallpapercave.com/wp/wp12009969.jpg",
+      "https://youtu.be/k_CxMefC7mA", // Your Demon Slayer 4K Edit Link
       {
         caption: `⚔️ *WELCOME TO DEMON SLAYER BOT* ⚔️
 
-🔥 Collect powerful slayers
-👹 Defeat dangerous demons
-🎒 Build your inventory
-🏆 Become the strongest warrior
+🔥 Collect legendary Demon Slayers  
+👹 Fight powerful demons  
+🎒 Build your inventory  
+🏆 Climb the leaderboard  
 
-Use /help to begin your journey.`,
+Use /help to begin your journey.
+
+*Are you ready to become the strongest?*`,
         parse_mode: "Markdown"
       }
     );
-  });
-};
+  } catch (error) {
+    console.error("Error sending video:", error);
+  }
+});
+
+console.log("Bot running...");
