@@ -1,6 +1,5 @@
 runtime:
-  type: nodejs
-  version: 18
+  image: node:18
 
 build:
   commands:
