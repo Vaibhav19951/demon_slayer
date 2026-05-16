@@ -4,7 +4,5 @@ runtime:
 commands:
   build:
     - npm install
-  start: node index.js
-
-env:
-  BOT_TOKEN: ${BOT_TOKEN}
+  start:
+    - "node index.js"
