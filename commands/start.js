@@ -8,12 +8,12 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, {
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
 
-  try {
-    await bot.sendVideo(
-      chatId,
-      "https://youtu.be/k_CxMefC7mA", // Your Demon Slayer 4K Edit Link
-      {
-        caption: `⚔️ *WELCOME TO DEMON SLAYER BOT* ⚔️
+  await bot.sendVideo(
+    chatId,
+    "https://files.catbox.moe/4kr4d6.mp4",
+    {
+      caption: `
+⚔️ *WELCOME TO DEMON SLAYER BOT* ⚔️
 
 🔥 Collect legendary Demon Slayers  
 👹 Fight powerful demons  
@@ -22,13 +22,11 @@ bot.onText(/\/start/, async (msg) => {
 
 Use /help to begin your journey.
 
-*Are you ready to become the strongest?*`,
-        parse_mode: "Markdown"
-      }
-    );
-  } catch (error) {
-    console.error("Error sending video:", error);
-  }
+*Are you ready to become the strongest?*
+      `,
+      parse_mode: "Markdown"
+    }
+  );
 });
 
 console.log("Bot running...");
