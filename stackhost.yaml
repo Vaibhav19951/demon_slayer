@@ -1,9 +1,8 @@
 runtime:
   image: node:18
 
-build:
-  commands:
+commands:
+  build:
     - npm install
-
-run:
-  command: node index.js
+  start:
+    - node index.js
