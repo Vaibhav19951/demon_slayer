@@ -1,4 +1,4 @@
-const weapons = require("../assets/weapons.js");
+const weapons = require("../asset/weapons.js");
 const players = require("../data/players.js");
 
 module.exports = (bot) => {
