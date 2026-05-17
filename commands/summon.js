@@ -1,4 +1,4 @@
-const characters = require("../assets/assets");
+const characters = require("../asset/assets");
 
 module.exports = (bot) => {
   bot.onText(/\/summon/, async (msg) => {
