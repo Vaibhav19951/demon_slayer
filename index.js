@@ -11,6 +11,5 @@ require("./commands/battle")(bot);
 require("./commands/help")(bot);
 require("./commands/inventory")(bot);
 require("./commands/profile")(bot);
-require("./commands/summon")(bot);
 
 console.log("⚔️ Bot running...");
