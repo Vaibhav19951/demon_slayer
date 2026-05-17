@@ -1,3 +1,7 @@
+User:
+  name: "SBKofficial"
+  github: "SBKofficial"
+
 runtime:
   image: node:18
 
@@ -6,5 +10,9 @@ commands:
     - npm install
   start: "node index.js"
 
-env:
-  BOT_TOKEN: ${BOT_TOKEN}
+repository:
+  branch: "main"
+  auto_deploy: true
+
+environment:
+  - BOT_TOKEN=${BOT_TOKEN}
