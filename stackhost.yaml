@@ -3,7 +3,7 @@ User:
   github: "Vaibhav19951"
 
 runtime:
-  image: node:18
+  image: node:22
 
 commands:
   build:
