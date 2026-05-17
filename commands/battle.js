@@ -1,13 +1,11 @@
-module.exports = {
-  name: "battle",
-  description: "Fight a demon",
-  execute: async (ctx) => {
+module.exports = (bot) => {
+  bot.onText(/\/battle/, async (msg) => {
     const win = Math.random() > 0.5;
 
     if (win) {
-      await ctx.reply("⚔️ You defeated the demon!");
+      await bot.sendMessage(msg.chat.id, "⚔️ You defeated the demon!");
     } else {
-      await ctx.reply("💀 You lost the battle...");
+      await bot.sendMessage(msg.chat.id, "💀 You lost the battle...");
     }
-  }
+  });
 };
