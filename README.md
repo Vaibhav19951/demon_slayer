@@ -1,8 +1,7 @@
 <h1 align="center">⚔️ Demon Slayer Telegram Bot ⚔️</h1>
-<h2 align="center">🤖 Bot Preview</h2>
 
 <p align="center">
-  <img src="https://joxtwsuwxucrxydskpuk.supabase.co/storage/v1/object/public/images/telegram-1779106551178-b55530f5.jpg" width="300">
+  <img src="https://joxtwsuwxucrxydskpuk.supabase.co/storage/v1/object/public/images/telegram-1779106551178-b55530f5.jpg" width="600">
 </p>
 
 <p align="center">
