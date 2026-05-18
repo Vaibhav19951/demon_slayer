@@ -5,17 +5,23 @@ module.exports = (bot) => {
   bot.onText(/^\/redeem (.+)$/, (msg, match) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
-    const cardId = match[1].trim();
 
     if (!players[userId]) {
       return bot.sendMessage(chatId, "❌ Use /start first.");
     }
 
     const player = players[userId];
-    const card = mythical.find((c) => c.id === cardId);
+    const cardId = match[1].trim().toLowerCase();
+
+    const card = mythical.find(
+      (c) => c.id.toLowerCase() === cardId
+    );
 
     if (!card) {
-      return bot.sendMessage(chatId, "❌ Invalid Card ID.");
+      return bot.sendMessage(
+        chatId,
+        "❌ Invalid Card ID.\nUse /mythicalshop to check IDs."
+      );
     }
 
     if (!player.mythicalCrystals) player.mythicalCrystals = 0;
@@ -28,14 +34,14 @@ module.exports = (bot) => {
     if (alreadyOwned) {
       return bot.sendMessage(
         chatId,
-        "⚠️ You already own this card."
+        `⚠️ You already own ${card.name}`
       );
     }
 
     if (player.mythicalCrystals < card.cost) {
       return bot.sendMessage(
         chatId,
-        `❌ Not enough crystals.\nNeed: ${card.cost}\nYou Have: ${player.mythicalCrystals}`
+        `❌ Not enough crystals!\n\nNeed: ${card.cost}\nYou Have: ${player.mythicalCrystals}`
       );
     }
 
