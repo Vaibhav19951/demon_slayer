@@ -9,6 +9,7 @@
     "canvas": "^3.2.3",
     "dotenv": "^16.4.5",
     "express": "^5.2.1",
-    "node-telegram-bot-api": "^0.66.0"
+    "node-telegram-bot-api": "^0.66.0",
+    "skia-canvas": "^3.0.8"
   }
 }

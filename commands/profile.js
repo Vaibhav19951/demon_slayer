@@ -6,14 +6,55 @@ module.exports = (bot) => {
 
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
+    const user = msg.from;
+
+    // SAFE USER INIT
+    if (!players[userId]) {
+      players[userId] = {
+        coins: 1000,
+        gems: 0,
+        mythicalCrystals: 5,
+        level: 1,
+        xp: 0,
+        rank: "Rookie",
+        character: "Not Selected"
+      };
+    }
 
     const p = players[userId];
 
-    const url = `http://localhost:3000/profile?name=${msg.from.first_name}&coins=${p.coins}&level=${p.level}&rank=${p.rank}`;
+    // =========================
+    // BACKGROUND IMAGE (ANY URL)
+    // =========================
+    const bg =
+      "https://i.pinimg.com/736x/9b/35/e8/9b35e852f18742bc03131e623615ff94.jpg"; 
+      // 👆 apna anime background change kar sakta hai
 
-    bot.sendPhoto(chatId, url, {
-      caption: "👤 Your Custom Profile"
-    });
+    // =========================
+    // TEXT OVERLAY USING CAPTION
+    // =========================
+    const caption = `
+⚔️ DEMON SLAYER PROFILE ⚔️
+
+👤 Name: ${user.first_name}
+💰 Coins: ${p.coins}
+💎 Gems: ${p.gems}
+📊 Level: ${p.level}
+🏆 Rank: ${p.rank}
+⚔️ Character: ${p.character}
+
+🔥 DEMON SLAYER BOT
+    `;
+
+    try {
+      await bot.sendPhoto(chatId, bg, {
+        caption: caption
+      });
+
+    } catch (err) {
+      console.log(err);
+      bot.sendMessage(chatId, "Profile load nahi hua 😓");
+    }
 
   });
 
