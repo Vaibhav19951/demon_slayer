@@ -98,7 +98,6 @@ bot.setMyCommands([
   { command: "mythicalshop", description: "Mythical shop" },
   { command: "redeem", description: "Redeem characters" },
   { command: "guild", description: "view guild" },
-  { command: "profile", description: "View your profile" },
   { command: "guild", description: "View guild" },
   { command: "myguild", description: "My guild info" },
   { command: "guildlb", description: "Guild leaderboard" },
