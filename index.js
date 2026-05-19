@@ -96,7 +96,8 @@ bot.setMyCommands([
   { command: "addchar", description: "Add character" },
   { command: "char", description: "View character" },
   { command: "mythicalshop", description: "Mythical shop" },
-  { command: "redeem", description: "Redeem characters" }
+  { command: "redeem", description: "Redeem characters" },
+  { command: "guild", description: "view guild" }
 ])
 .then(() => console.log("📜 Menu updated"))
 .catch(err => console.log("❌ Menu error:", err.message));
