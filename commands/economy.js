@@ -2,11 +2,8 @@ const players = require("../data/players");
 
 module.exports = (bot) => {
 
-  // =========================
-  // SAFE USER GET/CREATE
-  // =========================
+  // SAFE USER INIT
   const getUser = (userId) => {
-
     if (!players[userId]) {
       players[userId] = {
         coins: 1000,
@@ -15,6 +12,8 @@ module.exports = (bot) => {
         level: 1,
         xp: 0
       };
+
+      players.save();
     }
 
     return players[userId];
@@ -24,30 +23,28 @@ module.exports = (bot) => {
   // BALANCE
   // =========================
   bot.onText(/\/balance/, (msg) => {
-
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
     const p = getUser(userId);
 
-    bot.sendMessage(chatId,
+    bot.sendMessage(
+      chatId,
       `💰 *YOUR BALANCE*
 
 🪙 Coins: ${p.coins}
 💎 Gems: ${p.gems}
 🧬 Crystals: ${p.mythicalCrystals}
 📊 Level: ${p.level}
-⚡ XP: ${p.xp}
-      `,
+⚡ XP: ${p.xp}`,
       { parse_mode: "Markdown" }
     );
   });
 
   // =========================
-  // DAILY REWARD
+  // DAILY
   // =========================
   bot.onText(/\/daily/, (msg) => {
-
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
@@ -56,14 +53,15 @@ module.exports = (bot) => {
     const reward = 500;
     p.coins += reward;
 
-    bot.sendMessage(chatId, `🎁 Daily reward: +${reward} coins`);
+    players.save();
+
+    bot.sendMessage(chatId, `🎁 Daily reward claimed: +${reward} coins`);
   });
 
   // =========================
-  // WORK (EARN + XP)
+  // WORK
   // =========================
   bot.onText(/\/work/, (msg) => {
-
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
@@ -79,7 +77,10 @@ module.exports = (bot) => {
       p.xp = 0;
     }
 
-    bot.sendMessage(chatId,
+    players.save();
+
+    bot.sendMessage(
+      chatId,
       `⚔️ You worked and earned ${earn} coins`
     );
   });
