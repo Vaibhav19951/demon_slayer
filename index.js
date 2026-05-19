@@ -28,6 +28,14 @@ const bot = new TelegramBot(TOKEN, {
   }
 });
 
+process.on("uncaughtException", err => {
+  console.log("CRASH:", err.message);
+});
+
+process.on("unhandledRejection", err => {
+  console.log("PROMISE ERROR:", err.message);
+}); 
+
 // =========================
 // GLOBAL ERROR HANDLING (IMPORTANT)
 // =========================
