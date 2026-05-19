@@ -1,10 +1,10 @@
 const players = require("../data/players");
-const guilds = require("../data/guild");
+const guilds = require("../data/guilds");
 
 module.exports = (bot) => {
 
   // =========================
-  // FIND USER GUILD
+  // FIND GUILD
   // =========================
   const getUserGuild = (userId) => {
     for (let g in guilds) {
@@ -16,7 +16,7 @@ module.exports = (bot) => {
   };
 
   // =========================
-  // CREATE GUILD (PAID)
+  // CREATE GUILD
   // =========================
   bot.onText(/\/createguild (.+)/, (msg, match) => {
 
@@ -32,10 +32,9 @@ module.exports = (bot) => {
     }
 
     if (p.coins < 100000 || p.mythicalCrystals < 5) {
-      return bot.sendMessage(chatId, "❌ Need 100k coins + 5 mythical crystals");
+      return bot.sendMessage(chatId, "❌ Need 100k coins + 5 crystals");
     }
 
-    // deduct cost
     p.coins -= 100000;
     p.mythicalCrystals -= 5;
 
@@ -85,7 +84,7 @@ module.exports = (bot) => {
   });
 
   // =========================
-  // MY GUILD (UI + IMAGE)
+  // MY GUILD (WITH URL + BUTTONS)
   // =========================
   bot.onText(/\/myguild/, (msg) => {
 
@@ -117,6 +116,8 @@ module.exports = (bot) => {
 📜 Your Contribution:
 - Coins: ${c.coins}
 - Tokens: ${c.mythicalTokens}
+
+🌐 More Info: https://example.com/guild-system
     `;
 
     bot.sendPhoto(chatId, guild.image, {
@@ -126,10 +127,13 @@ module.exports = (bot) => {
         inline_keyboard: [
           [
             { text: "💰 Vault", callback_data: "guild_vault" },
-            { text: "📜 My Stats", callback_data: "guild_contrib" }
+            { text: "📜 Stats", callback_data: "guild_stats" }
           ],
           [
-            { text: "🏆 Leaderboard (soon)", callback_data: "guild_lb" }
+            { text: "🏆 Leaderboard", callback_data: "guild_lb" }
+          ],
+          [
+            { text: "🌐 Guild Guide", url: "https://example.com/guild-guide" }
           ]
         ]
       }
@@ -154,7 +158,7 @@ module.exports = (bot) => {
   });
 
   // =========================
-  // DEPOSIT SYSTEM
+  // DEPOSIT
   // =========================
   bot.onText(/\/deposit (coins|tokens) (\d+)/, (msg, match) => {
 
@@ -168,13 +172,9 @@ module.exports = (bot) => {
     const guild = getUserGuild(userId);
 
     if (!guild) return bot.sendMessage(chatId, "❌ No guild");
-    if (!p) return bot.sendMessage(chatId, "❌ No player");
 
     if (!guild.contributions[userId]) {
-      guild.contributions[userId] = {
-        coins: 0,
-        mythicalTokens: 0
-      };
+      guild.contributions[userId] = { coins: 0, mythicalTokens: 0 };
     }
 
     if (type === "coins") {
@@ -207,31 +207,31 @@ module.exports = (bot) => {
 
     const type = match[1];
     const amount = parseInt(match[2]);
-    const targetUser = match[3];
+    const target = match[3];
 
     const guild = getUserGuild(userId);
 
     if (!guild) return bot.sendMessage(chatId, "❌ No guild");
-    if (guild.leader !== userId) return bot.sendMessage(chatId, "❌ Only leader can withdraw");
+    if (guild.leader !== userId) return bot.sendMessage(chatId, "❌ Only leader");
 
-    if (!players[targetUser]) return bot.sendMessage(chatId, "❌ User not found");
+    if (!players[target]) return bot.sendMessage(chatId, "❌ User not found");
 
     if (type === "coins") {
 
-      if (guild.vault.coins < amount) return bot.sendMessage(chatId, "❌ Not enough vault coins");
+      if (guild.vault.coins < amount) return bot.sendMessage(chatId, "❌ Not enough vault");
 
       guild.vault.coins -= amount;
-      players[targetUser].coins += amount;
+      players[target].coins += amount;
 
     } else {
 
-      if (guild.vault.mythicalTokens < amount) return bot.sendMessage(chatId, "❌ Not enough vault tokens");
+      if (guild.vault.mythicalTokens < amount) return bot.sendMessage(chatId, "❌ Not enough vault");
 
       guild.vault.mythicalTokens -= amount;
-      players[targetUser].mythicalCrystals += amount;
+      players[target].mythicalCrystals += amount;
     }
 
-    bot.sendMessage(chatId, `👑 Leader sent ${amount} ${type} to user`);
+    bot.sendMessage(chatId, `👑 Sent ${amount} ${type} to user`);
   });
 
   // =========================
@@ -251,9 +251,9 @@ module.exports = (bot) => {
       text = `💰 Vault:\nCoins: ${guild.vault.coins}\nTokens: ${guild.vault.mythicalTokens}`;
     }
 
-    if (query.data === "guild_contrib") {
+    if (query.data === "guild_stats") {
       const c = guild.contributions[userId] || { coins: 0, mythicalTokens: 0 };
-      text = `📜 Your Contribution:\nCoins: ${c.coins}\nTokens: ${c.mythicalTokens}`;
+      text = `📜 Your Stats:\nCoins: ${c.coins}\nTokens: ${c.mythicalTokens}`;
     }
 
     if (query.data === "guild_lb") {
