@@ -1,3 +1,4 @@
+console.log("GUILD FILE LOADED");
 const guilds = require("../data/guild");
 const players = require("../data/players");
 
