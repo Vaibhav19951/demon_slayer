@@ -103,7 +103,12 @@ bot.setMyCommands([
   { command: "guide", description: "Bot guide" },
   { command: "balance", description: "Check balance" },
   { command: "daily", description: "Claim daily reward" },
-  { command: "work", description: "Earn coins" }
+  { command: "work", description: "Earn coins" },
+  { command: "createguild", description: "to create paid guild" },
+  { command: "deposit", description: "Deposit resources" },
+  { command: "upgradeguild", description: "Upgrade guild" }, 
+  { command: "joinguild", description: "Join guild" },
+  
 ])
 .then(() => console.log("📜 Menu updated"))
 .catch(err => console.log("❌ Menu error:", err.message));
