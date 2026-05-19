@@ -1,6 +1,6 @@
 const fs = require("fs");
 
-let guilds = require("./guilds.json");
+let guilds = require("./guild.json");
 
 guilds.save = () => {
   fs.writeFileSync(
