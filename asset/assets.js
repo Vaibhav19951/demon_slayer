@@ -1,3 +1,14 @@
+
+
+const START_IMG =
+  "https://i.pinimg.com/736x/e1/97/3e/e1973e8421e69bc09f731b60f5102d97.jpg";
+
+const HARU_IMG =
+  "https://pic-link-bot.lovable.app/i/telegram-1779346403935-c002fd05.jpg";
+
+const SORA_IMG =
+  "https://pic-link-bot.lovable.app/i/telegram-1779346551992-24806470.jpg";
+
 const characters = [
   // 🌊 Water Hashira
   {
@@ -514,14 +525,9 @@ const characters = [
   image: "https://pic-link-bot.lovable.app/i/telegram-1779346662082-72f05640.jpg"
 }
 ];
-
-module.exports = characters;
-
-const START_IMG =
-  "https://i.pinimg.com/736x/e1/97/3e/e1973e8421e69bc09f731b60f5102d97.jpg";
-
-const HARU_IMG =
-  "https://pic-link-bot.lovable.app/i/telegram-1779346403935-c002fd05.jpg";
-
-const SORA_IMG =
-  "https://pic-link-bot.lovable.app/i/telegram-1779346551992-24806470.jpg";
+module.exports = {
+  characters,
+  START_IMG,
+  HARU_IMG,
+  SORA_IMG
+};
