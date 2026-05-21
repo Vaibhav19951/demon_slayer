@@ -1,14 +1,14 @@
+console.log("✅ RPG HELP CENTER FILE LOADED");
+
 module.exports = (bot) => {
 
   // =========================
   // HELP COMMAND
   // =========================
   bot.onText(/\/help/, (msg) => {
-
     const chatId = msg.chat.id;
 
     const image = "https://i.pinimg.com/1200x/5e/3d/77/5e3d77131f4866906087659fddc0ff3c.jpg"; 
-    // 👆 apna valid image URL yaha dal
 
     const caption = `
 📘 *RPG HELP CENTER*
@@ -45,73 +45,69 @@ module.exports = (bot) => {
   // BUTTON HANDLER
   // =========================
   bot.on("callback_query", (q) => {
-
     const chatId = q.message.chat.id;
     const data = q.data;
+
+    // Safety guard: Agar data help_ se start nahi hota, toh control return kar do
+    if (!data.startsWith("help_")) return;
 
     let text = "";
 
     if (data === "help_guild") {
-      text = `
-🏰 GUILD SYSTEM
+      text = `🏰 **GUILD SYSTEM**
 
-/createguild <name>
-/joinguild <name>
-/myguild
-/guildlb
-/upgradeguild
-      `;
+• \`/createguild <name>\` → Create your faction
+• \`/joinguild <name>\` → Join an active guild
+• \`/myguild\` → Check your guild status
+• \`/guildvault <amount>\` → Deposit coins to guild vault
+• \`/guildrewards\` → Check weekly glory milestones
+• \`/claimguildrewards\` → Claim your unlocked milestones!
+• \`/guildlb\` → Rank of top guild vaults`;
     }
 
     if (data === "help_economy") {
-      text = `
-💰 ECONOMY SYSTEM
+      text = `💰 **ECONOMY SYSTEM**
 
-/balance
-/daily
-/work
-/deposit coins 100
-/deposit tokens 5
-      `;
+• \`/balance\` → Check wallet coins
+• \`/daily\` → Claim free tokens/coins
+• \`/work\` → Hunt for cash resources
+• \`/deposit <amount>\` → Move coins to personal bank account`;
     }
 
     if (data === "help_profile") {
-      text = `
-👤 PROFILE SYSTEM
+      text = `👤 **PROFILE SYSTEM**
 
-/profile → stats
-/inventory → items
-/char → characters
-/equip → equip items
-      `;
+• \`/profile\` → View stats, live XP, rank & character card
+• \`/inventory\` → Inspect your collection items
+• \`/char\` → Lists all available database cards
+• \`/char <name/id>\` → Search characters with [⭐ Normal]/[🔥 MYTHICAL] separation
+• \`/equip\` → Equip weapons & accessories`;
     }
 
     if (data === "help_battle") {
-      text = `
-⚔️ BATTLE SYSTEM
+      text = `⚔️ **BATTLE SYSTEM**
 
-/battle → fight
-/summon → summon characters
-      `;
+• \`/battle\` → Spawn random rank demons & battle for Coins/XP
+• \`/summon\` → Use Mythical Crystals to pull characters`;
     }
 
     if (data === "help_guide") {
-      text = `
-📘 GUIDE
+      text = `📘 **GUIDE**
 
-/guide → full visual guide with images + buttons
-      `;
+• \`/guide\` → Open full visual interactive user guide panels`;
     }
 
     if (data === "help_lb") {
-      text = `
-🏆 LEADERBOARD
+      text = `🏆 **LEADERBOARD**
 
-/guildlb → guild ranking system
-      `;
+• \`/guildlb\` → Main ranking network for elite clans`;
     }
 
-    bot.sendMessage(chatId, text);
+    // Safety fallback check to prevent empty message crashes
+    if (text) {
+      bot.sendMessage(chatId, text, { parse_mode: "Markdown" });
+    }
+    
     bot.answerCallbackQuery(q.id);
   });
 
