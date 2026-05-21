@@ -167,7 +167,8 @@ What will you do?`,
 
         text += `🏆 YOU WON!
 
-💰 +100 Coins`;
+💰 +${demon.reward} Coins
+✨ +${demon.exp} EXP`;
 
         await bot.editMessageCaption(text, {
           chat_id: chatId,
