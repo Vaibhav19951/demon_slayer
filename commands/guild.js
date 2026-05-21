@@ -1,10 +1,36 @@
-console.log("✅ GUILD FILE LOADED WITH VAULT");
+console.log("✅ GUILD FILE LOADED WITH VAULT AND AUTO-RECOVERY");
 
 const fs = require("fs");
 const path = require("path");
 
-const playerFile = path.join(__dirname, "../data/players.json");
-const guildFile = path.join(__dirname, "../data/guild.json");
+const dataDir = path.join(__dirname, "../data");
+const playerFile = path.join(dataDir, "players.json");
+const guildFile = path.join(dataDir, "guild.json");
+
+// ==========================================
+// SAFE DIRECTORY & FILE INITIALIZATION
+// ==========================================
+try {
+  // Agar 'data' folder nahi hai toh banao
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    console.log("📁 'data' folder created automatically.");
+  }
+  
+  // Agar 'players.json' nahi hai toh khali object ke sath banao
+  if (!fs.existsSync(playerFile)) {
+    fs.writeFileSync(playerFile, JSON.stringify({}), "utf8");
+    console.log("📄 'players.json' created automatically.");
+  }
+
+  // Agar 'guild.json' nahi hai toh khali object ke sath banao
+  if (!fs.existsSync(guildFile)) {
+    fs.writeFileSync(guildFile, JSON.stringify({}), "utf8");
+    console.log("📄 'guild.json' created automatically.");
+  }
+} catch (err) {
+  console.error("❌ Error setting up data files:", err.message);
+}
 
 // LOAD DATA SAFELY
 let players = {};
@@ -178,7 +204,7 @@ module.exports = (bot) => {
   });
 
   // =========================
-  // GUILD VAULT DEPOSIT (NEW COMMAND)
+  // GUILD VAULT DEPOSIT
   // =========================
   bot.onText(/\/guildvault(?: (.+))?/, (msg, match) => {
     const chatId = msg.chat.id;
@@ -196,7 +222,6 @@ module.exports = (bot) => {
       return bot.sendMessage(chatId, "ℹ️ Specify an amount to deposit to your guild vault.\nExample: `/guildvault 500` or `/guildvault all`", { parse_mode: "Markdown" });
     }
 
-    // Clean up "coins" phrase automatically if typed
     amountInput = amountInput.toLowerCase().replace(/coins|coin/g, "").trim();
 
     let amount = 0;
@@ -214,7 +239,6 @@ module.exports = (bot) => {
       return bot.sendMessage(chatId, "❌ You do not have enough coins in your personal wallet!");
     }
 
-    // Deduct from player, add directly to guild vault coins
     player.coins -= amount;
     guild.vault.coins += amount;
 
