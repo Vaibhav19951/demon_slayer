@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const playerFile = path.join(__dirname, "../data/players.json");
-const guildFile = path.join(__dirname, "../data/guilds.json");
+const guildFile = path.join(__dirname, "../data/guild.json");
 
 // LOAD
 let players = {};
@@ -20,10 +20,11 @@ const getUser = (userId) => {
   if (!players[userId]) {
     players[userId] = {
       coins: 1000,
-      tokens: 0,
+      tokens: 0, // This functions as Bank balance
       level: 1,
       xp: 0,
-      guildId: null
+      guildId: null,
+      lastDaily: 0 // Added to track daily cooldown
     };
     savePlayers();
   }
@@ -45,16 +46,90 @@ const getGuild = (guildId) => {
 module.exports = (bot) => {
 
   // =========================
-  // PLAYER DEPOSIT (BANK)
+  // 1. BALANCE COMMAND
   // =========================
-  bot.onText(/\/deposit (\d+)/, (msg, match) => {
+  bot.onText(/\/balance/, (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
-
-    const amount = Number(match[1]);
     const p = getUser(userId);
 
-    if (!amount || amount <= 0) {
+    const text = `⚔️ *Slayer Inventory* ⚔️\n\n👛 *Wallet:* ${p.coins} coins\n🏦 *Bank:* ${p.tokens} tokens`;
+    bot.sendMessage(chatId, text, { parse_mode: "Markdown" });
+  });
+
+  // =========================
+  // 2. DAILY REWARD COMMAND
+  // =========================
+  bot.onText(/\/daily/, (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id.toString();
+    const p = getUser(userId);
+
+    const now = Date.now();
+    const cooldown = 24 * 60 * 60 * 1000; // 24 hours
+
+    if (p.lastDaily && now - p.lastDaily < cooldown) {
+      const timeLeft = cooldown - (now - p.lastDaily);
+      const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minsLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      return bot.sendMessage(chatId, `⏳ You already claimed your daily reward! Come back in *${hoursLeft}h ${minsLeft}m*.`, { parse_mode: "Markdown" });
+    }
+
+    const reward = 500;
+    p.coins += reward;
+    p.lastDaily = now;
+    savePlayers();
+
+    bot.sendMessage(chatId, `🎁 *Daily Reward!* You claimed *${reward} coins*!`, { parse_mode: "Markdown" });
+  });
+
+  // =========================
+  // 3. WORK COMMAND
+  // =========================
+  bot.onText(/\/work/, (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id.toString();
+    const p = getUser(userId);
+
+    const jobs = [
+      "You trained hard with the Water Hashira",
+      "You helped the Butterfly Mansion clean medical supplies",
+      "You assisted Haganezuka in polishing swords",
+      "You defeated a minor demon lurking in the woods"
+    ];
+
+    const randomJob = jobs[Math.floor(Math.random() * jobs.length)];
+    const earnings = Math.floor(Math.random() * 150) + 50; // Earns 50-200 coins
+
+    p.coins += earnings;
+    savePlayers();
+
+    bot.sendMessage(chatId, `💼 *Work:* ${randomJob} and earned *${earnings} coins*!`, { parse_mode: "Markdown" });
+  });
+
+  // =========================
+  // 4. PLAYER DEPOSIT (BANK)
+  // =========================
+  // This layout allows typing just "/deposit" to see an instruction message
+  bot.onText(/\/deposit(?: (.+))?/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id.toString();
+    const p = getUser(userId);
+
+    const amountInput = match[1];
+
+    if (!amountInput) {
+      return bot.sendMessage(chatId, "ℹ️ Please specify an amount to deposit. Example: `/deposit 50` or `/deposit all`", { parse_mode: "Markdown" });
+    }
+
+    let amount = 0;
+    if (amountInput.toLowerCase() === "all") {
+      amount = p.coins;
+    } else {
+      amount = Number(amountInput);
+    }
+
+    if (isNaN(amount) || amount <= 0) {
       return bot.sendMessage(chatId, "❌ Invalid amount");
     }
 
@@ -64,24 +139,23 @@ module.exports = (bot) => {
 
     p.coins -= amount;
     p.tokens += amount;
-
     savePlayers();
 
-    bot.sendMessage(chatId, `🏦 Deposited ${amount} coins to your bank`);
+    bot.sendMessage(chatId, `🏦 Deposited ${amount} coins to your bank account.`);
   });
 
   // =========================
-  // GUILD DEPOSIT
+  // 5. GUILD DEPOSIT
   // =========================
-  bot.onText(/\/guilddeposit (\d+)/, (msg, match) => {
+  bot.onText(/\/guilddeposit(?: (.+))?/, (msg, match) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
-
-    const amount = Number(match[1]);
     const p = getUser(userId);
 
-    if (!amount || amount <= 0) {
-      return bot.sendMessage(chatId, "❌ Invalid amount");
+    const amountInput = match[1];
+
+    if (!amountInput) {
+      return bot.sendMessage(chatId, "ℹ️ Please specify an amount to deposit to your guild. Example: `/guilddeposit 100`", { parse_mode: "Markdown" });
     }
 
     if (!p.guildId) {
@@ -89,6 +163,11 @@ module.exports = (bot) => {
     }
 
     const g = getGuild(p.guildId);
+    let amount = Number(amountInput);
+
+    if (isNaN(amount) || amount <= 0) {
+      return bot.sendMessage(chatId, "❌ Invalid amount");
+    }
 
     if (p.coins < amount) {
       return bot.sendMessage(chatId, "❌ Not enough coins");
@@ -102,7 +181,8 @@ module.exports = (bot) => {
 
     bot.sendMessage(
       chatId,
-      `🏰 Guild Deposit Successful!\n💰 +${amount} coins added to guild bank\n🏦 Guild Bank: ${g.bank}`
+      `🏰 *Guild Deposit Successful!*\n💰 +${amount} coins added to guild bank\n🏦 Guild Bank: ${g.bank}`,
+      { parse_mode: "Markdown" }
     );
   });
 
