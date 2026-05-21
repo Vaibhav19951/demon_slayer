@@ -1,18 +1,13 @@
 const players = require("../data/players");
 
+const {
+  characters,
+  START_IMG,
+  HARU_IMG,
+  SORA_IMG
+} = require("../assets/assets");
+
 module.exports = (bot) => {
-
-  // =========================
-  // IMAGES
-  // =========================
-  const START_IMG =
-    "https://i.pinimg.com/736x/e1/97/3e/e1973e8421e69bc09f731b60f5102d97.jpg";
-
-  const TANJIRO_IMG =
-    "https://i.pinimg.com/736x/ab/26/81/ab26817caf5dbd8bd82f698f517649b7.jpg";
-
-  const NEZUKO_IMG =
-    "https://i.pinimg.com/736x/6c/02/c9/6c02c93d3991470183f6c169d1adc64e.jpg";
 
   // =========================
   // START COMMAND
@@ -22,56 +17,52 @@ module.exports = (bot) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
-    // CREATE PLAYER
+    // CREATE PLAYER DATA
     if (!players[userId]) {
       players[userId] = {
+        id: userId,
         coins: 1000,
         gems: 0,
         mythicalCrystals: 5,
-        cards: [],
-        character: null
+        inventory: [],
+        selectedCharacter: null
       };
     }
 
-    // =========================
-    // ALREADY SELECTED
-    // =========================
-    if (players[userId].character) {
+    // ALREADY STARTED
+    if (players[userId].selectedCharacter) {
+
+      const charData = characters.find(
+        c => c.id === players[userId].selectedCharacter
+      );
 
       return bot.sendMessage(
         chatId,
         `
-⚠️ You Already Selected A Character!
+⚠️ You Already Started Your Journey!
 
 👤 Current Character:
-${players[userId].character}
+${charData.name}
 
-🎯 Use /hunt To Start Hunting Demons
+🎯 Use /hunt To Begin Hunting Demons
 `
       );
     }
 
-    // =========================
-    // START MENU
-    // =========================
+    // START MESSAGE
     await bot.sendPhoto(chatId, START_IMG, {
       caption: `
 ⚔️ WELCOME TO DEMON SLAYER BOT ⚔️
 
-Choose Your Beginning 👇
+Are You Ready To Begin Your Journey
+As A Demon Slayer?
 `,
       reply_markup: {
         inline_keyboard: [
           [
             {
-              text: "👦 Tanjiro Beginning",
-              callback_data: "tanjiro"
-            }
-          ],
-          [
-            {
-              text: "👧 Nezuko Beginning",
-              callback_data: "nezuko"
+              text: "✅ Yes",
+              callback_data: "begin_journey"
             }
           ]
         ]
@@ -81,103 +72,235 @@ Choose Your Beginning 👇
   });
 
   // =========================
-  // BUTTON HANDLER
+  // CALLBACKS
   // =========================
   bot.on("callback_query", async (query) => {
 
     const chatId = query.message.chat.id;
+    const messageId = query.message.message_id;
     const userId = query.from.id.toString();
     const data = query.data;
 
-    // CREATE PLAYER IF NOT EXISTS
+    // CREATE PLAYER
     if (!players[userId]) {
       players[userId] = {
+        id: userId,
         coins: 1000,
         gems: 0,
         mythicalCrystals: 5,
-        cards: [],
-        character: null
+        inventory: [],
+        selectedCharacter: null
       };
     }
 
     // =========================
-    // BLOCK SECOND SELECTION
+    // BEGIN JOURNEY
     // =========================
-    if (players[userId].character) {
+    if (data === "begin_journey") {
 
-      return bot.answerCallbackQuery(query.id, {
-        text: "❌ Character Already Selected!",
-        show_alert: true
-      });
+      return bot.editMessageCaption(
+        `
+⚔️ SELECT YOUR CHARACTER ⚔️
+
+Choose Your Beginning 👇
+`,
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🗡️ Haru",
+                  callback_data: "select_haru"
+                }
+              ],
+              [
+                {
+                  text: "🌙 Sora",
+                  callback_data: "select_sora"
+                }
+              ]
+            ]
+          }
+        }
+      );
     }
 
     // =========================
-    // TANJIRO SELECT
+    // HARU PREVIEW
     // =========================
-    if (data === "tanjiro") {
+    if (data === "select_haru") {
 
-      players[userId].character = "Tanjiro";
+      const char = characters.find(c => c.id === "haru");
 
-      await bot.sendPhoto(chatId, TANJIRO_IMG, {
+      return bot.sendPhoto(chatId, HARU_IMG, {
         caption: `
-🔥 TANJIRO BEGINNING 🔥
+🗡️ ${char.name}
 
-👦 Character: Tanjiro
-🪙 Coins: 1000
-💎 Gems: 0
-🔮 Crystals: 5
+📜 ${char.description}
 
-✅ Character Locked Successfully!
+❤️ HP: ${char.hp}
+⚔️ Attack: ${char.attack}
+🛡️ Defense: ${char.defense}
+⚡ Speed: ${char.speed}
 
-🎯 New Command Unlocked:
-/hunt
+🎖️ Rank: ${char.rank}
+✨ Rarity: ${char.rarity}
 `,
         reply_markup: {
           inline_keyboard: [
             [
               {
-                text: "🌐 View Tanjiro",
-                url: "https://kimetsu-no-yaiba.fandom.com/wiki/Tanjiro_Kamado"
+                text: "✅ Yes",
+                callback_data: "confirm_haru"
+              }
+            ],
+            [
+              {
+                text: "⬅️ Back",
+                callback_data: "back_character_select"
               }
             ]
           ]
         }
+      });
+    }
+
+    // =========================
+    // SORA PREVIEW
+    // =========================
+    if (data === "select_sora") {
+
+      const char = characters.find(c => c.id === "sora");
+
+      return bot.sendPhoto(chatId, SORA_IMG, {
+        caption: `
+🌙 ${char.name}
+
+📜 ${char.description}
+
+❤️ HP: ${char.hp}
+⚔️ Attack: ${char.attack}
+🛡️ Defense: ${char.defense}
+⚡ Speed: ${char.speed}
+
+🎖️ Rank: ${char.rank}
+✨ Rarity: ${char.rarity}
+`,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "✅ Yes",
+                callback_data: "confirm_sora"
+              }
+            ],
+            [
+              {
+                text: "⬅️ Back",
+                callback_data: "back_character_select"
+              }
+            ]
+          ]
+        }
+      });
+    }
+
+    // =========================
+    // BACK TO CHARACTER SELECT
+    // =========================
+    if (data === "back_character_select") {
+
+      return bot.sendMessage(
+        chatId,
+        `
+⚔️ SELECT YOUR CHARACTER ⚔️
+
+Choose Your Beginning 👇
+`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🗡️ Haru",
+                  callback_data: "select_haru"
+                }
+              ],
+              [
+                {
+                  text: "🌙 Sora",
+                  callback_data: "select_sora"
+                }
+              ]
+            ]
+          }
+        }
+      );
+    }
+
+    // =========================
+    // CONFIRM HARU
+    // =========================
+    if (data === "confirm_haru") {
+
+      const char = characters.find(c => c.id === "haru");
+
+      players[userId].selectedCharacter = "haru";
+
+      players[userId].inventory.push({
+        id: char.id,
+        name: char.name,
+        rarity: char.rarity
+      });
+
+      await bot.sendPhoto(chatId, HARU_IMG, {
+        caption: `
+🔥 JOURNEY BEGINS 🔥
+
+🗡️ You Chose ${char.name}
+
+✅ Character Added To Inventory
+
+🎯 New Commands Unlocked:
+/hunt
+/profile
+/inventory
+`
       });
 
       return bot.answerCallbackQuery(query.id);
     }
 
     // =========================
-    // NEZUKO SELECT
+    // CONFIRM SORA
     // =========================
-    if (data === "nezuko") {
+    if (data === "confirm_sora") {
 
-      players[userId].character = "Nezuko";
+      const char = characters.find(c => c.id === "sora");
 
-      await bot.sendPhoto(chatId, NEZUKO_IMG, {
+      players[userId].selectedCharacter = "sora";
+
+      players[userId].inventory.push({
+        id: char.id,
+        name: char.name,
+        rarity: char.rarity
+      });
+
+      await bot.sendPhoto(chatId, SORA_IMG, {
         caption: `
-🌸 NEZUKO BEGINNING 🌸
+🌙 JOURNEY BEGINS 🌙
 
-👧 Character: Nezuko
-🪙 Coins: 1000
-💎 Gems: 0
-🔮 Crystals: 5
+🗡️ You Chose ${char.name}
 
-✅ Character Locked Successfully!
+✅ Character Added To Inventory
 
-🎯 New Command Unlocked:
+🎯 New Commands Unlocked:
 /hunt
-`,
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🌐 View Nezuko",
-                url: "https://kimetsu-no-yaiba.fandom.com/wiki/Nezuko_Kamado"
-              }
-            ]
-          ]
-        }
+/profile
+/inventory
+`
       });
 
       return bot.answerCallbackQuery(query.id);
