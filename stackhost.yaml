@@ -1,6 +1,5 @@
-User:
-  name: "Vaibhav19951"
-  github: "Vaibhav19951"
+name: "Vaibhav19951"
+github: "Vaibhav19951"
 
 runtime:
   image: node:20-alpine
