@@ -108,6 +108,7 @@ bot.setMyCommands([
   { command: "deposit", description: "Deposit resources" },
   { command: "upgradeguild", description: "Upgrade guild" }, 
   { command: "joinguild", description: "Join guild" },
+  { command: "owner", description: "@shyyy_o" }
   
 ])
 .then(() => console.log("📜 Menu updated"))
