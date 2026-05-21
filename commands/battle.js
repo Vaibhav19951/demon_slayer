@@ -1,92 +1,237 @@
+const TelegramBot = require("node-telegram-bot-api");
+const demons = require("../asset/demons");
+
+// Save active battles
+const battles = {};
+
 module.exports = (bot) => {
-  const enemiesByLevel = {
-    beginner: [
-      { name: "👹 Weak Demon", hp: 35, attack: 6, reward: 40 },
-      { name: "🕷 Spider Demon", hp: 45, attack: 8, reward: 55 },
-      { name: "🐺 Beast Demon", hp: 42, attack: 7, reward: 50 },
-      { name: "🦇 Night Demon", hp: 48, attack: 9, reward: 60 },
-      { name: "☠️ Lost Soul", hp: 38, attack: 6, reward: 45 },
-    ],
 
-    intermediate: [
-      { name: "🩸 Lower Moon 6", hp: 70, attack: 14, reward: 120 },
-      { name: "🐍 Serpent Demon", hp: 85, attack: 16, reward: 150 },
-      { name: "🕸 Rui Clone", hp: 90, attack: 17, reward: 160 },
-      { name: "🌫 Mist Demon", hp: 88, attack: 15, reward: 145 },
-      { name: "🦂 Poison Demon", hp: 95, attack: 18, reward: 170 },
-    ],
-
-    advanced: [
-      { name: "🔥 Upper Moon 6", hp: 120, attack: 24, reward: 250 },
-      { name: "💀 Blood Demon", hp: 140, attack: 28, reward: 320 },
-      { name: "⚡️ Thunder Beast", hp: 135, attack: 26, reward: 300 },
-      { name: "🌑 Upper Moon 4", hp: 150, attack: 30, reward: 350 },
-      { name: "🐉 Dragon Demon", hp: 165, attack: 32, reward: 400 },
-    ],
-  };
-
+  // =========================
+  // ⚔️ /battle
+  // =========================
   bot.onText(/\/battle/, async (msg) => {
+
     const chatId = msg.chat.id;
+    const userId = msg.from.id;
 
-    const playerLevel = Math.floor(Math.random() * 30) + 1;
-    let enemyPool;
-
-    if (playerLevel <= 10) {
-      enemyPool = enemiesByLevel.beginner;
-    } else if (playerLevel <= 20) {
-      enemyPool = enemiesByLevel.intermediate;
-    } else {
-      enemyPool = enemiesByLevel.advanced;
+    // Prevent multiple battles
+    if (battles[userId]) {
+      return bot.sendMessage(
+        chatId,
+        "⚠️ You are already in a battle!"
+      );
     }
 
-    const enemy =
-      enemyPool[Math.floor(Math.random() * enemyPool.length)];
+    // Random demon
+    const demon =
+      demons[Math.floor(Math.random() * demons.length)];
 
-    const player = {
-      hp: 100 + playerLevel * 3,
-      attack: 15 + playerLevel * 2,
+    // Player Data
+    battles[userId] = {
+      demon,
+      playerHp: 150,
+      demonHp: demon.hp,
+      shield: false,
     };
 
-    try {
-      await bot.sendPhoto(
-        chatId,
-        "https://i.pinimg.com/736x/e6/48/aa/e648aa4d25e06b27a93b2bc43a796a5e.jpg",
+    // Send demon
+    await bot.sendPhoto(chatId, demon.image, {
+      caption: `👹 A Demon Appeared!
+
+🏷 Name: ${demon.name}
+⚡ Rank: ${demon.rank}
+🔥 Type: ${demon.type}
+
+❤️ HP: ${demon.hp}
+🗡 ATK: ${demon.attack}
+🛡 DEF: ${demon.defense}
+
+What will you do?`,
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "⚔️ Slay", callback_data: "slay" },
+            { text: "🏃 Run", callback_data: "run" }
+          ]
+        ]
+      }
+    });
+
+  });
+
+  // =========================
+  // 🔘 BUTTONS
+  // =========================
+  bot.on("callback_query", async (query) => {
+
+    const data = query.data;
+    const msg = query.message;
+    const chatId = msg.chat.id;
+    const userId = query.from.id;
+
+    // No battle
+    if (!battles[userId]) {
+      return bot.answerCallbackQuery(query.id, {
+        text: "No active battle!"
+      });
+    }
+
+    const battle = battles[userId];
+    const demon = battle.demon;
+
+    // =========================
+    // 🏃 RUN
+    // =========================
+    if (data === "run") {
+
+      delete battles[userId];
+
+      await bot.editMessageCaption(
+        `🏃 You escaped from ${demon.name}!`,
         {
-          caption: `⚔️ BATTLE BEGINS ⚔️
-
-🧍 Level: ${playerLevel}
-Enemy: ${enemy.name}
-
-Prepare for battle...`,
+          chat_id: chatId,
+          message_id: msg.message_id,
         }
       );
 
-      let playerHp = player.hp;
-      let enemyHp = enemy.hp;
-      let log = "";
-
-      while (playerHp > 0 && enemyHp > 0) {
-        enemyHp -= player.attack;
-        log += 🗡 You attacked ${enemy.name}\n-${player.attack} HP\n\n;
-
-        if (enemyHp <= 0) break;
-
-        playerHp -= enemy.attack;
-        log += ${enemy.name} attacked back!\n💥 -${enemy.attack} HP\n\n;
-      }
-
-      if (playerHp > 0) {
-        log += 🏆 Victory!\nDefeated ${enemy.name}\n💰 +${enemy.reward} Coins;
-      } else {
-        log += ☠️ Defeat!\n${enemy.name} defeated you;
-      }
-
-      setTimeout(() => {
-        bot.sendMessage(chatId, log);
-      }, 2000);
-    } catch (error) {
-      console.log(error.message);
-      bot.sendMessage(chatId, "Battle failed ❌");
+      return bot.answerCallbackQuery(query.id);
     }
+
+    // =========================
+    // ⚔️ START FIGHT
+    // =========================
+    if (data === "slay") {
+
+      await bot.editMessageCaption(
+        `⚔️ Battle Started Against ${demon.name}!
+
+❤️ Your HP: ${battle.playerHp}
+👹 Demon HP: ${battle.demonHp}`,
+        {
+          chat_id: chatId,
+          message_id: msg.message_id,
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: "🗡 Attack", callback_data: "attack" },
+                { text: "🛡 Shield", callback_data: "shield" }
+              ],
+              [
+                { text: "🏃 Run", callback_data: "run" }
+              ]
+            ]
+          }
+        }
+      );
+
+      return bot.answerCallbackQuery(query.id);
+    }
+
+    // =========================
+    // 🛡 SHIELD
+    // =========================
+    if (data === "shield") {
+
+      battle.shield = true;
+
+      await bot.answerCallbackQuery(query.id, {
+        text: "🛡 Shield Activated!"
+      });
+
+      return;
+    }
+
+    // =========================
+    // 🗡 ATTACK
+    // =========================
+    if (data === "attack") {
+
+      // Player attack
+      const playerDamage =
+        Math.floor(Math.random() * 20) + 15;
+
+      battle.demonHp -= playerDamage;
+
+      let text = `🗡 You attacked ${demon.name}
+💥 ${playerDamage} damage!
+
+👹 Demon HP: ${Math.max(0, battle.demonHp)}
+❤️ Your HP: ${battle.playerHp}
+
+`;
+
+      // Demon defeated
+      if (battle.demonHp <= 0) {
+
+        delete battles[userId];
+
+        text += `🏆 YOU WON!
+
+💰 +100 Coins`;
+
+        await bot.editMessageCaption(text, {
+          chat_id: chatId,
+          message_id: msg.message_id,
+        });
+
+        return bot.answerCallbackQuery(query.id);
+      }
+
+      // Demon attack
+      let demonDamage =
+        Math.floor(Math.random() * demon.attack) + 5;
+
+      // Shield reduce damage
+      if (battle.shield) {
+        demonDamage = Math.floor(demonDamage / 2);
+        battle.shield = false;
+        text += `🛡 Shield reduced damage!\n\n`;
+      }
+
+      battle.playerHp -= demonDamage;
+
+      text += `👹 ${demon.name} attacked!
+💥 ${demonDamage} damage!
+
+❤️ Your HP: ${Math.max(0, battle.playerHp)}`;
+
+      // Player defeated
+      if (battle.playerHp <= 0) {
+
+        delete battles[userId];
+
+        text += `
+
+☠️ You were defeated...`;
+
+        await bot.editMessageCaption(text, {
+          chat_id: chatId,
+          message_id: msg.message_id,
+        });
+
+        return bot.answerCallbackQuery(query.id);
+      }
+
+      // Continue battle
+      await bot.editMessageCaption(text, {
+        chat_id: chatId,
+        message_id: msg.message_id,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "🗡 Attack", callback_data: "attack" },
+              { text: "🛡 Shield", callback_data: "shield" }
+            ],
+            [
+              { text: "🏃 Run", callback_data: "run" }
+            ]
+          ]
+        }
+      });
+
+      return bot.answerCallbackQuery(query.id);
+    }
+
   });
-}
+
+};
