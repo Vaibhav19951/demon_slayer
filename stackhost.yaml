@@ -2,7 +2,7 @@ name: "Vaibhav19951"
 github: "Vaibhav19951"
 
 runtime:
-  image: node:20-alpine
+  image: node:22
 
 commands:
   build:
