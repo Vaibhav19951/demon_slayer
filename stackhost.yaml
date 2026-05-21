@@ -1,5 +1,2 @@
-version: "1.0"
-commands:
-  build: npm install
-  start: node index.js
-  
+build: npm install
+start: node index.js
