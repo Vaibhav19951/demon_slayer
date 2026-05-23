@@ -1,7 +1,8 @@
-console.log("✅ TERMINAL-FREE NATIVE PROFILE SYSTEM LOADED");
+console.log("✅ LIVE LOCAL CANVAS PROFILE SYSTEM ENGAGED");
 
 const fs = require("fs");
 const path = require("path");
+const { createCanvas, loadImage } = require("canvas");
 
 const dataDir = path.join(__dirname, "../data");
 const playerFile = path.join(dataDir, "players.json");
@@ -22,9 +23,6 @@ module.exports = (bot) => {
     return players[userId];
   };
 
-  // ==========================================
-  // 👤 ZERO-DEPENDENCY PROFILE (/profile)
-  // ==========================================
   bot.onText(/\/profile/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
@@ -34,48 +32,109 @@ module.exports = (bot) => {
     const userGuild = stats.guildId && guilds[stats.guildId] ? guilds[stats.guildId].name : "No Guild Joined";
     const totalCards = stats.characters ? stats.characters.length : 0;
 
-    // Tumhari di hui permanent Pinterest background link
-    const permanentBackground = "https://i.pinimg.com/736x/9b/35/e8/9b35e852f18742bc03131e623615ff94.jpg";
+    const processingMsg = await bot.sendMessage(chatId, "⚡ _Generating profile card..._");
 
-    // Ekdum rigid, clean aur professional text layout structure
-    const profileCaption = `╔════════════════════════╗\n` +
-                           `   👤  *SLAYER CORPS IDENTITY CARD*   \n` +
-                           `╚════════════════════════╝\n\n` +
-                           `📋 *NAME :*  ${username}\n` +
-                           `🆔 *USER ID :*  \`${userId}\`\n` +
-                           `⚔️ *RANK LEVEL :*  \`Lvl ${stats.level}\`\n` +
-                           `✨ *EXPERIENCE :*  \`${stats.xp} XP\`\n` +
-                           `🏰 *GUILD SYSTEM :*  *${userGuild}*\n` +
-                           `💰 *SLAYER COINS :*  \`💰 ${stats.coins}\`\n` +
-                           `👑 *TOTAL CARDS :*  \`${totalCards} Cards\`\n\n` +
-                           `🛸 _Database node parameters synchronized successfully._`;
+    // Tumhara permanent background link
+    const permanentBackground = "https://i.pinimg.com/736x/9b/35/e8/9b35e852f18742bc03131e623615ff94.jpg";
+    let avatarUrl = "https://i.imgur.com/6vb8Hzv.png"; // Default fallback PFP
 
     try {
-      // User ki live Telegram PFP fetch karne ka try karte hain
       const profilePhotos = await bot.getUserProfilePhotos(userId, { limit: 1 });
-      
       if (profilePhotos && profilePhotos.total_count > 0) {
         const fileId = profilePhotos.photos[0][0].file_id;
-        
-        // Pehle User ki apni DP bhejega mast structured stats ke sath
-        await bot.sendPhoto(chatId, fileId, {
-          caption: profileCaption,
-          parse_mode: "Markdown"
-        });
-      } else {
-        // Agar user ki koi PFP nahi hai, toh direct tumhara background image default set ho jayega
-        await bot.sendPhoto(chatId, permanentBackground, {
-          caption: profileCaption,
-          parse_mode: "Markdown"
-        });
+        avatarUrl = await bot.getFileLink(fileId);
       }
     } catch (err) {
-      console.error("Profile dispatch execution fault:", err.message);
-      // Kuch bhi crash hone par permanent background default image fallback layer par trigger ho jayega
-      await bot.sendPhoto(chatId, permanentBackground, {
-        caption: profileCaption,
+      console.log("Could not load user live avatar, applying fallback.");
+    }
+
+    try {
+      // Dimensions set karte hain canvas ke liye
+      const canvas = createCanvas(600, 350);
+      const ctx = canvas.getContext("2d");
+
+      // Background draw karna
+      const bgImg = await loadImage(permanentBackground);
+      ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+
+      // Dark glass background text ke piche readability ke liye
+      ctx.fillStyle = "rgba(15, 15, 22, 0.75)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Border lines
+      ctx.strokeStyle = "#ff4757";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+      // User PFP circular cropping
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(110, 130, 55, 0, Math.PI * 2, true);
+      ctx.closePath();
+      ctx.clip();
+
+      const userPfp = await loadImage(avatarUrl);
+      ctx.drawImage(userPfp, 55, 75, 110, 110);
+      ctx.restore();
+
+      // PFP Outline border ring
+      ctx.beginPath();
+      ctx.arc(110, 130, 55, 0, Math.PI * 2, true);
+      ctx.strokeStyle = "#ff4757";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Username layout text
+      ctx.fillStyle = "#ff4757";
+      ctx.font = "bold 22px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(username, 110, 220);
+
+      // Status Tag badge
+      ctx.fillStyle = "#ff4757";
+      ctx.fillRect(45, 240, 130, 24);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 11px Arial";
+      ctx.fillText("SLAYER CORPS", 110, 256);
+
+      // Right Side stats box layer
+      ctx.textAlign = "left";
+      ctx.fillStyle = "rgba(25, 25, 35, 0.85)";
+      ctx.strokeStyle = "rgba(255, 71, 87, 0.25)";
+      ctx.fillRect(230, 30, 340, 290);
+      ctx.strokeRect(230, 30, 340, 290);
+
+      // Data placements inside panels
+      ctx.fillStyle = "#aaa"; ctx.font = "10px Arial"; ctx.fillText("SLAYER ID", 250, 60);
+      ctx.fillStyle = "#ffa502"; ctx.font = "bold 15px Arial"; ctx.fillText(userId, 250, 80);
+
+      ctx.fillStyle = "#aaa"; ctx.font = "10px Arial"; ctx.fillText("RANK LEVEL", 250, 125);
+      ctx.fillStyle = "#2ed573"; ctx.font = "bold 18px Arial"; ctx.fillText(`Lvl ${stats.level}`, 250, 145);
+
+      ctx.fillStyle = "#aaa"; ctx.font = "10px Arial"; ctx.fillText("EXPERIENCE", 410, 125);
+      ctx.fillStyle = "#1e90ff"; ctx.font = "bold 18px Arial"; ctx.fillText(`${stats.xp} XP`, 410, 145);
+
+      ctx.fillStyle = "#aaa"; ctx.font = "10px Arial"; ctx.fillText("GUILD STATUS", 250, 195);
+      ctx.fillStyle = "#ffffff"; ctx.font = "bold 15px Arial"; ctx.fillText(`🏰 ${userGuild}`, 250, 215);
+
+      ctx.fillStyle = "#aaa"; ctx.font = "10px Arial"; ctx.fillText("COINS", 250, 260);
+      ctx.fillStyle = "#eccc68"; ctx.font = "bold 16px Arial"; ctx.fillText(`💰 ${stats.coins}`, 250, 280);
+
+      ctx.fillStyle = "#aaa"; ctx.font = "10px Arial"; ctx.fillText("TOTAL CARDS", 410, 260);
+      ctx.fillStyle = "#ff6b81"; ctx.font = "bold 16px Arial"; ctx.fillText(`👑 ${totalCards}`, 410, 280);
+
+      const finalImageBuffer = canvas.toBuffer("image/png");
+      await bot.deleteMessage(chatId, processingMsg.message_id);
+
+      await bot.sendPhoto(chatId, finalImageBuffer, {
+        caption: `⚔️ *Slayer Profile generated successfully via Canvas engine.*`,
         parse_mode: "Markdown"
       });
+
+    } catch (canvasErr) {
+      console.error(canvasErr);
+      await bot.deleteMessage(chatId, processingMsg.message_id);
+      bot.sendMessage(chatId, "❌ Profile Card rendering generation failure.");
     }
   });
 };
