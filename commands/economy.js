@@ -7,7 +7,7 @@ const path = require('path');
 // Global Database Path
 const dbPath = path.join(__dirname, 'data', 'players.json');
 
-// Mock Assets Configuration Pools (If not imported from other config sheets)
+// Mock Assets Configuration Pools
 const normalCards = [
     { name: "Mizunoto Recruit" }, { name: "Mizunoe Slayer" }, 
     { name: "Kanoto Swordsman" }, { name: "Kanoe Guardian" },
@@ -47,14 +47,18 @@ function saveDB(data) {
 // Data Sanitization Shield (No NaN / Undefined variables allowed)
 function sanitizeUserObject(user) {
     let u = user || {};
+    
+    // 🔥 CRITICAL FIX: Checking both 'mythic' and fallback 'tokens' key to prevent 0-reset bugs
+    let rawMythicTokens = u.mythic !== undefined ? u.mythic : (u.tokens !== undefined ? u.tokens : 0);
+
     return {
-        coins: Math.max(0, parseInt(u.coins) || 500),
-        crystals: Math.max(0, parseInt(u.crystals) || 0),
-        mythic: Math.max(0, parseInt(u.mythic) || 0),
+        coins: Math.max(0, parseInt(u.coins, 10) || 500),
+        crystals: Math.max(0, parseInt(u.crystals, 10) || 0),
+        mythic: Math.max(0, parseInt(rawMythicTokens, 10) || 0), // Fully strict token parser
         inventory: Array.isArray(u.inventory) ? u.inventory : [],
         materials: u.materials && typeof u.materials === 'object' ? u.materials : {},
-        lastWork: parseInt(u.lastWork) || 0,
-        lastTask: parseInt(u.lastTask) || 0
+        lastWork: parseInt(u.lastWork, 10) || 0,
+        lastTask: parseInt(u.lastTask, 10) || 0
     };
 }
 
@@ -200,7 +204,6 @@ module.exports = (bot) => {
             );
         }
 
-        // 1. Check if user owns the base character in inventory
         let baseCharIndex = p.inventory.findIndex(item => {
             let name = typeof item === "string" ? item : (item.name || "");
             return name.toLowerCase().includes(inputChar);
@@ -212,28 +215,24 @@ module.exports = (bot) => {
 
         let rawCharacter = p.inventory[baseCharIndex];
         
-        // 2. Structural data transformation (String to Level Object converting engine)
         let charObject = { name: "", level: 1 };
         if (typeof rawCharacter === "string") {
             charObject.name = rawCharacter;
             charObject.level = 1;
         } else {
             charObject.name = rawCharacter.name || "Unknown Slayer";
-            charObject.level = parseInt(rawCharacter.level) || 1;
+            charObject.level = parseInt(rawCharacter.level, 10) || 1;
         }
 
-        // Max Level Guard (Cap at Level 5 to maintain combat balancing metrics)
         if (charObject.level >= 5) {
             return bot.sendMessage(chatId, `👑 **Max Horizon Reached!** \`${charObject.name}\` is already at **Level 5 (Max Apex Rank)**.`);
         }
 
-        // 3. Dynamic Identification of Essence Key inside player profile storage data array
-        // Agar input "tanjiro" hai toh id mapped to "tanjiro_essence"
         let matchedMythic = mythicCards.find(c => c.name.toLowerCase().includes(inputChar));
         let charId = matchedMythic ? matchedMythic.id.split('_')[0] : inputChar.replace(/\s+/g, '');
         let essenceKey = `${charId}_essence`;
 
-        let currentEssenceCount = parseInt(p.materials[essenceKey]) || 0;
+        let currentEssenceCount = parseInt(p.materials[essenceKey], 10) || 0;
         const requiredEssence = 5;
 
         if (currentEssenceCount < requiredEssence) {
@@ -250,18 +249,13 @@ module.exports = (bot) => {
             );
         }
 
-        // 4. Execution Logic Loop: Deduct assets & Increment structural Level variable state
         p.materials[essenceKey] = currentEssenceCount - requiredEssence;
         charObject.level += 1;
-
-        // Save updated object back inside the internal local inventory stack
         p.inventory[baseCharIndex] = charObject;
 
-        // Anti-NaN check protection injection layer before saving state parameters back to system disk
         db[userId] = sanitizeUserObject(p);
         saveDB(db);
 
-        // Power scaling calculation display node variables metrics
         let basePower = charObject.level * 150;
         let originalPower = (charObject.level - 1) * 150;
 
@@ -289,7 +283,6 @@ module.exports = (bot) => {
         db[userId] = sanitizeUserObject(db[userId]);
         let p = db[userId];
 
-        // STEP 1: Agar sirf /spin likha ho -> Category Setup UI bhejo
         if (!match[1]) {
             const platformMenu = {
                 reply_markup: JSON.stringify({
@@ -316,12 +309,11 @@ module.exports = (bot) => {
             );
         }
 
-        // Backup Manual Text Parser System (/spin normal 10)
         await executeSpinLogic(chatId, userId, match[1].toLowerCase(), match[2] ? parseInt(match[2], 10) : 1);
     });
 
     // ==========================================
-    // ⚡ CENTRAL PHYSICS SPIN EXECUTION ENGINE
+    // ⚡ CENTRAL PHYSICS SPIN EXECUTION ENGINE (FULLY SECURED)
     // ==========================================
     async function executeSpinLogic(chatId, userId, mode, count) {
         let db = getDB();
@@ -330,7 +322,7 @@ module.exports = (bot) => {
 
         let cost = 0;
         let rolls = count;
-        let currencyKey = "";
+        let currencyKey = "mythic"; // Default fallback execution pointer
         let assetSymbol = "";
 
         if (mode === "normal") {
@@ -361,8 +353,12 @@ module.exports = (bot) => {
             return bot.sendMessage(chatId, "❌ **Unknown Tier selection!** Use `/spin normal`, `/spin character`, or `/spin material`.");
         }
 
-        if (p[currencyKey] < cost) {
-            return bot.sendMessage(chatId, `❌ **Sack Depleted!** Need ${assetSymbol} \`${cost.toLocaleString()}\` for this operation.`);
+        // 🔥 CRITICAL PROTECTION STACK: Strict type validation to prevent balance bypassing crashes
+        let currentUserBalance = parseInt(p[currencyKey], 10);
+        if (isNaN(currentUserBalance)) currentUserBalance = 0;
+
+        if (currentUserBalance < cost) {
+            return bot.sendMessage(chatId, `❌ **Sack Depleted!** Need ${assetSymbol} \`${cost.toLocaleString()}\` for this operation. Your current balance is: ${assetSymbol} \`${currentUserBalance.toLocaleString()}\`.`);
         }
 
         let lootEarned = [];
@@ -377,7 +373,7 @@ module.exports = (bot) => {
                     lootEarned.push(`🃏 Card: ${randomNorm}`);
                 } else {
                     const bonusCoins = Math.floor(Math.random() * 80) + 20;
-                    p.coins = (parseInt(p.coins) || 0) + bonusCoins;
+                    p.coins = (parseInt(p.coins, 10) || 0) + bonusCoins;
                     lootEarned.push(`🪙 Bonus: +${bonusCoins} Coins`);
                 }
             } 
@@ -403,7 +399,6 @@ module.exports = (bot) => {
                     lootEarned.push(`🃏 Card: ${droppedCharName}`);
                 }
 
-                // 🔄 DUPLICATE UPGRADE TO ESSENCE SYSTEM
                 let hasDuplicate = p.inventory.some(item => {
                     if (typeof item === "string") return item.toLowerCase() === droppedCharName.toLowerCase();
                     return item.name && item.name.toLowerCase() === droppedCharName.toLowerCase();
@@ -411,7 +406,7 @@ module.exports = (bot) => {
 
                 if (hasDuplicate) {
                     const essenceKey = `${droppedCharId}_essence`;
-                    let curEssence = parseInt(p.materials[essenceKey]) || 0;
+                    let curEssence = parseInt(p.materials[essenceKey], 10) || 0;
                     p.materials[essenceKey] = curEssence + 1;
                     lootEarned[lootEarned.length - 1] += ` 🔄 (Duplicate -> Converted to +1 ${essenceKey.toUpperCase()})`;
                 } else {
@@ -420,7 +415,7 @@ module.exports = (bot) => {
             } 
             else if (mode === "material") {
                 if (Math.random() < 0.15) {
-                    let curBless = parseInt(p.materials["universal_blessing"]) || 0;
+                    let curBless = parseInt(p.materials["universal_blessing"], 10) || 0;
                     p.materials["universal_blessing"] = curBless + 1;
                     lootEarned.push("💎 Universal Blessing Ore Piece");
                 } else {
@@ -428,15 +423,15 @@ module.exports = (bot) => {
                     const designatedChar = poolSample[Math.floor(Math.random() * poolSample.length)];
                     const generatedEssence = `${designatedChar}_essence`;
                     
-                    let curEss = parseInt(p.materials[generatedEssence]) || 0;
+                    let curEss = parseInt(p.materials[generatedEssence], 10) || 0;
                     p.materials[generatedEssence] = curEss + 1;
                     lootEarned.push(`🧪 Essence: ${generatedEssence.toUpperCase()}`);
                 }
             }
         }
 
-        // Deduct operational cost
-        p[currencyKey] = (parseInt(p[currencyKey]) || 0) - cost;
+        // Deduct operational cost with base-10 radix shield
+        p[currencyKey] = (parseInt(p[currencyKey], 10) || 0) - cost;
         db[userId] = sanitizeUserObject(p); 
         saveDB(db);
 
@@ -465,7 +460,6 @@ module.exports = (bot) => {
         const userId = query.from.id.toString();
         const dataPayload = query.data;
 
-        // INTERCEPTOR 1: Multi-spin Menu open on Platform Selection
         if (dataPayload.startsWith("select_platform:")) {
             const targetPlatform = dataPayload.split(":")[1];
             
@@ -489,13 +483,11 @@ module.exports = (bot) => {
 
             let keyboardRows = [];
             if (targetPlatform === "character") {
-                // Mythic contains only 1x and 5x bundles
                 keyboardRows.push([
                     { text: `🎰 1x Spin (${rate1} ${baseAsset})`, callback_data: `btn_spin:character:1` },
                     { text: `🔥 5x Spin (${rate5} ${baseAsset})`, callback_data: `btn_spin:character:5` }
                 ]);
             } else {
-                // Normal and Materials get full ranges (1x, 5x, 10x, 50x)
                 keyboardRows.push([
                     { text: `🎰 1x`, callback_data: `btn_spin:${targetPlatform}:1` },
                     { text: `🚀 5x`, callback_data: `btn_spin:${targetPlatform}:5` }
@@ -524,7 +516,6 @@ module.exports = (bot) => {
             return bot.answerCallbackQuery(query.id);
         }
 
-        // INTERCEPTOR 2: Execution Roll Launcher
         if (dataPayload.startsWith("btn_spin:")) {
             const [_, targetMode, countVal] = dataPayload.split(":");
             const runCount = parseInt(countVal, 10) || 1;
@@ -534,7 +525,6 @@ module.exports = (bot) => {
             return bot.answerCallbackQuery(query.id);
         }
 
-        // INTERCEPTOR 3: Back Reset Trigger
         if (dataPayload === "spin_back_main") {
             bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
             bot.processUpdate({ message: { chat: { id: chatId }, from: { id: userId }, text: "/spin" } });
