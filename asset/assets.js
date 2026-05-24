@@ -26,7 +26,10 @@ const characters = [
     defense: 26,
     speed: 41,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345152982-e7ffe560.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345152982-e7ffe560.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🔥 Flame Hashira
@@ -47,7 +50,10 @@ const characters = [
     defense: 28,
     speed: 38,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345219885-aaa4a578.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345219885-aaa4a578.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // ⚡️ Thunder Hashira
@@ -68,7 +74,10 @@ const characters = [
     defense: 27,
     speed: 42,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345280404-781df8a7.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345280404-781df8a7.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🌸 Love Hashira
@@ -89,7 +98,10 @@ const characters = [
     defense: 24,
     speed: 43,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345360205-8fde18e4.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345360205-8fde18e4.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🐍 Serpent Hashira
@@ -110,7 +122,10 @@ const characters = [
     defense: 23,
     speed: 40,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345388521-c0d312b8.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345388521-c0d312b8.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🪨 Stone Hashira
@@ -131,7 +146,10 @@ const characters = [
     defense: 35,
     speed: 30,
     rarity: "SSR",
-    image: "https://t.me/Image_LinkBot?start=7547794741"
+    image: "https://t.me/Image_LinkBot?start=7547794741",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🌫 Mist Hashira
@@ -152,7 +170,10 @@ const characters = [
     defense: 22,
     speed: 45,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345649988-506e1d3d.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345649988-506e1d3d.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🦋 Insect Hashira
@@ -173,7 +194,10 @@ const characters = [
     defense: 20,
     speed: 44,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345754042-2e9abcf7.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345754042-2e9abcf7.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🌪 Wind Hashira
@@ -194,7 +218,10 @@ const characters = [
     defense: 25,
     speed: 41,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345789123-b0eb504a.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345789123-b0eb504a.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🔰 Lower Rank Slayers
@@ -215,7 +242,10 @@ const characters = [
     defense: 18,
     speed: 35,
     rarity: "SR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345827680-5e8aa125.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345827680-5e8aa125.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // ❄️ Frost Hashira (Custom)
@@ -236,7 +266,10 @@ const characters = [
     defense: 30,
     speed: 40,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345887171-b1efb23c.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345887171-b1efb23c.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🌑 Shadow Slayer (Custom)
@@ -257,7 +290,10 @@ const characters = [
     defense: 19,
     speed: 45,
     rarity: "SR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346031463-1de7c939.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346031463-1de7c939.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // ⚡️ Storm Hashira (Custom)
@@ -278,7 +314,10 @@ const characters = [
     defense: 27,
     speed: 43,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346085384-6570df24.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346085384-6570df24.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🌸 Bloom Slayer (Custom)
@@ -299,7 +338,10 @@ const characters = [
     defense: 18,
     speed: 34,
     rarity: "SR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346108792-e6697c48.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346108792-e6697c48.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🔥 Ash Demon Slayer (Custom)
@@ -320,7 +362,10 @@ const characters = [
     defense: 21,
     speed: 28,
     rarity: "SR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346174880-db9214fd.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346174880-db9214fd.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🌌 Cosmic Hashira (Custom - OP character)
@@ -341,7 +386,10 @@ const characters = [
     defense: 35,
     speed: 38,
     rarity: "UR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346196278-50a29c00.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346196278-50a29c00.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🌌 Witch (Custom - OP character)
@@ -362,7 +410,10 @@ const characters = [
     defense: 350,
     speed: 380,
     rarity: "SSR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779345976501-074dd29d.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779345976501-074dd29d.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🟢 Mizunoto Rank (Beginner)
@@ -382,7 +433,10 @@ const characters = [
     defense: 8,
     speed: 10,
     rarity: "Common",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346302261-fbcf3a7b.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346302261-fbcf3a7b.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🟢 Mizunoto Rank
@@ -402,7 +456,10 @@ const characters = [
     defense: 14,
     speed: 11,
     rarity: "Common",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346347304-ccbf990b.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346347304-ccbf990b.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🔵 Mizunoe Rank
@@ -422,7 +479,10 @@ const characters = [
     defense: 12,
     speed: 14,
     rarity: "Common",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346403935-c002fd05.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346403935-c002fd05.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🔵 Mizunoe Rank
@@ -442,7 +502,10 @@ const characters = [
     defense: 11,
     speed: 15,
     rarity: "Common",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346515208-9714775f.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346515208-9714775f.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🟡 Kanoto Rank
@@ -462,7 +525,10 @@ const characters = [
     defense: 13,
     speed: 22,
     rarity: "Uncommon",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346551992-24806470.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346551992-24806470.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🟡 Kanoto Rank
@@ -482,7 +548,10 @@ const characters = [
     defense: 16,
     speed: 13,
     rarity: "Uncommon",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346453156-ec74d288.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346453156-ec74d288.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🟠 Kanoe Rank
@@ -502,7 +571,10 @@ const characters = [
     defense: 18,
     speed: 20,
     rarity: "SR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346608545-019f096f.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346608545-019f096f.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   },
 
   // 🟠 Kanoe Rank
@@ -522,7 +594,10 @@ const characters = [
     defense: 17,
     speed: 21,
     rarity: "SR",
-    image: "https://pic-link-bot.lovable.app/i/telegram-1779346662082-72f05640.jpg"
+    image: "https://pic-link-bot.lovable.app/i/telegram-1779346662082-72f05640.jpg",
+    level: 1,
+    xp: 0,
+    max_xp: 100
   }
 ];
 
