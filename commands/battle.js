@@ -1,4 +1,4 @@
-console.log("⚔️ BATTLE SYSTEM ONLINE (VELIX OS V2.5) - FIXED TOTAL");
+console.log("⚔️ BATTLE SYSTEM ONLINE (VELIX OS V2.5) - ENHANCED SECURITY & TASK SYNC");
 
 const fs = require("fs");
 const path = require("path");
@@ -9,6 +9,26 @@ const playerFile = path.join(__dirname, "../data/players.json");
 const battles = {};
 
 module.exports = (bot) => {
+  
+  // Dynamic Mission Progression Monitor Engine
+  const incrementTaskProgress = (userId, freshPlayers, msg) => {
+    let p = freshPlayers[userId];
+
+    if (p && p.active_task && p.active_task.id === "battle" && !p.active_task.completed) {
+      p.active_task.progress += 1;
+      
+      // If Target Objective is reached
+      if (p.active_task.progress >= p.active_task.target) {
+        p.active_task.completed = true;
+        p.mythic = Number(p.mythic || 0) + 20; // Token Reward aligned to mythic
+        p.exp = Number(p.exp || 0) + 50;       // EXP Reward aligned to exp
+        
+        bot.sendMessage(msg.chat.id, `🎉 **DAILY MISSION COMPLETED!**\n✨ User: *${msg.from.first_name}*\n🎁 Rewards Unlocked: *+20 Mythic Tokens* & *+50 XP*!`);
+      }
+    }
+  };
+
+  // Command Initialization
   bot.onText(/\/battle/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
@@ -22,43 +42,62 @@ module.exports = (bot) => {
       caption: `👹 **A Demon Appeared!**\n\n🏷 **Name:** ${demon.name}\n❤️ **HP:** ${demon.hp}\n🗡 **ATK:** ${demon.attack}\n\nWhat will you do?`,
       parse_mode: "Markdown",
       reply_markup: {
-        inline_keyboard: [[{ text: "⚔️ Slay", callback_data: "slay" }, { text: "🏃 Run", callback_data: "run" }]]
+        // Appending owner ID onto callback strings for direct security filtering
+        inline_keyboard: [[{ text: "⚔️ Slay", callback_data: `slay_${userId}` }, { text: "🏃 Run", callback_data: `run_${userId}` }]]
       }
     });
   });
 
+  // Action Button Operations
   bot.on("callback_query", async (query) => {
-    const validBattleButtons = ["slay", "run", "attack", "shield"];
-    if (!validBattleButtons.includes(query.data)) return;
+    if (!query.data.includes("_")) return;
+    const [action, targetUserId] = query.data.split("_");
+    
+    const validBattleActions = ["slay", "run", "attack", "shield"];
+    if (!validBattleActions.includes(action)) return;
 
-    const userId = query.from.id.toString();
-    if (!battles[userId]) return bot.answerCallbackQuery(query.id, { text: "❌ No active battle!", show_alert: true });
+    const clickerId = query.from.id.toString();
 
-    const battle = battles[userId];
+    // 🔥 SECURITY LOCK: Prevent other users from tapping on your battle menu panel
+    if (clickerId !== targetUserId) {
+      return bot.answerCallbackQuery(query.id, { 
+        text: "❌ This is not your battle! Type /battle to summon your own demon.", 
+        show_alert: true 
+      });
+    }
+
+    if (!battles[targetUserId]) return bot.answerCallbackQuery(query.id, { text: "❌ No active battle found!", show_alert: true });
+
+    const battle = battles[targetUserId];
     const demon = battle.demon;
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
 
-    if (query.data === "run") {
-      delete battles[userId];
+    if (action === "run") {
+      delete battles[targetUserId];
       await bot.editMessageCaption(`🏃 You escaped safely from ${demon.name}!`, { chat_id: chatId, message_id: messageId });
     } 
-    else if (query.data === "slay") {
+    else if (action === "slay") {
       await bot.editMessageCaption(`⚔️ **Battle Started Against ${demon.name}!**\n\n❤️ Your HP: ${battle.playerHp}\n👹 Demon HP: ${battle.demonHp}`, {
         chat_id: chatId, message_id: messageId, parse_mode: "Markdown",
-        reply_markup: { inline_keyboard: [[{ text: "🗡 Attack", callback_data: "attack" }, { text: "🛡 Shield", callback_data: "shield" }], [{ text: "🏃 Run", callback_data: "run" }]] }
+        reply_markup: { 
+          inline_keyboard: [
+            [{ text: "🗡 Attack", callback_data: `attack_${targetUserId}` }, { text: "🛡 Shield", callback_data: `shield_${targetUserId}` }], 
+            [{ text: "🏃 Run", callback_data: `run_${targetUserId}` }]
+          ] 
+        }
       });
     }
-    else if (query.data === "shield") {
+    else if (action === "shield") {
       battle.shield = true;
       bot.answerCallbackQuery(query.id, { text: "🛡 Shield Activated!" });
       return;
     }
-    else if (query.data === "attack") {
+    else if (action === "attack") {
       const playerDamage = Math.floor(Math.random() * 20) + 15;
       battle.demonHp -= playerDamage;
 
-      // WIN CONDITION
+      // WIN CONDITION REACHED
       if (battle.demonHp <= 0) {
         let freshPlayers = {};
         try {
@@ -66,25 +105,24 @@ module.exports = (bot) => {
             freshPlayers = JSON.parse(fs.readFileSync(playerFile, "utf8"));
           }
         } catch (err) {
-          console.error("🔥 Error reading fresh file:", err);
+          console.error("🔥 Error reading player file database:", err);
         }
 
-        if (!freshPlayers[userId]) {
-          freshPlayers[userId] = { coins: 0, xp: 0, level: 1, bank: 0, tokens: 0, guildId: null, inventory: [] };
+        if (!freshPlayers[targetUserId]) {
+          freshPlayers[targetUserId] = { coins: 500, bank: 0, crystals: 0, mythic: 0, level: 1, exp: 0, guildId: null, inventory: [], active_task: null };
         }
 
         const rCoins = parseInt(demon.reward) || 50;
         const rXp = parseInt(demon.exp) || 20;
 
-        // Numbers data cleansing
-        const currentCoins = Number(freshPlayers[userId].coins || 0);
-        const currentXp = Number(freshPlayers[userId].xp || 0);
-        let currentLevel = Number(freshPlayers[userId].level || 1);
+        // Structured Database alignment mapping keys to profile architecture
+        const currentCoins = Number(freshPlayers[targetUserId].coins || 0);
+        const currentXp = Number(freshPlayers[targetUserId].exp || 0); // Corrected from xp to exp
+        let currentLevel = Number(freshPlayers[targetUserId].level || 1);
 
-        // Update balance safely
-        freshPlayers[userId].coins = currentCoins + Number(rCoins);
+        freshPlayers[targetUserId].coins = currentCoins + Number(rCoins);
         
-        // Accurate level-up algorithm
+        // Progression processing stack
         let totalXp = currentXp + Number(rXp);
         let xpNeeded = currentLevel * 100;
         let levelUpMessage = "";
@@ -93,20 +131,23 @@ module.exports = (bot) => {
           totalXp -= xpNeeded;
           currentLevel += 1;
           xpNeeded = currentLevel * 100;
-          levelUpMessage = `\n\n🎉 **LEVEL UP!** Now Level ${currentLevel}!`;
+          levelUpMessage = `\n\n🎉 **LEVEL UP!** You have reached **Level ${currentLevel}**!`;
         }
 
-        freshPlayers[userId].level = currentLevel;
-        freshPlayers[userId].xp = totalXp < 0 ? 0 : totalXp; 
+        freshPlayers[targetUserId].level = currentLevel;
+        freshPlayers[targetUserId].exp = totalXp < 0 ? 0 : totalXp; // Corrected from xp to exp
+
+        // Daily task progress evaluation sequence before data dump commit
+        incrementTaskProgress(targetUserId, freshPlayers, query.message);
 
         try {
           fs.writeFileSync(playerFile, JSON.stringify(freshPlayers, null, 2), "utf8");
-          console.log(`✅ Data hard-saved for ${userId}. Coins: ${freshPlayers[userId].coins}, XP: ${freshPlayers[userId].xp}, LVL: ${freshPlayers[userId].level}`);
+          console.log(`✅ Data saved for ${targetUserId}. Coins: ${freshPlayers[targetUserId].coins}, EXP: ${freshPlayers[targetUserId].exp}, LVL: ${freshPlayers[targetUserId].level}`);
         } catch (err) {
-          console.error("🔥 Error hard-saving file:", err);
+          console.error("🔥 Error saving file to database storage:", err);
         }
 
-        delete battles[userId];
+        delete battles[targetUserId];
 
         await bot.editMessageCaption(`🏆 **YOU WON!**\n💰 **+${rCoins} Coins**\n✨ **+${rXp} XP**${levelUpMessage}\n\n✅ Profile synced live with database.`, { 
           chat_id: chatId, 
@@ -115,18 +156,26 @@ module.exports = (bot) => {
         });
       } 
       else {
-        // Counter Attack Logic
+        // Enemy Retaliation Turn Phase
         let dDmg = Math.floor(Math.random() * (demon.attack || 15)) + 5;
-        if (battle.shield) { dDmg = Math.floor(dDmg / 2); battle.shield = false; }
+        if (battle.shield) { 
+          dDmg = Math.floor(dDmg / 2); 
+          battle.shield = false; 
+        }
         battle.playerHp -= dDmg;
 
         if (battle.playerHp <= 0) {
-          delete battles[userId];
+          delete battles[targetUserId];
           await bot.editMessageCaption(`☠️ **You were defeated by ${demon.name}!**`, { chat_id: chatId, message_id: messageId, parse_mode: "Markdown" });
         } else {
           await bot.editMessageCaption(`🗡 You dealt ${playerDamage} dmg!\n👹 Demon HP: ${battle.demonHp}\n❤️ Your HP: ${battle.playerHp}`, {
             chat_id: chatId, message_id: messageId, parse_mode: "Markdown",
-            reply_markup: { inline_keyboard: [[{ text: "🗡 Attack", callback_data: "attack" }, { text: "🛡 Shield", callback_data: "shield" }], [{ text: "🏃 Run", callback_data: "run" }]] }
+            reply_markup: { 
+              inline_keyboard: [
+                [{ text: "🗡 Attack", callback_data: `attack_${targetUserId}` }, { text: "🛡 Shield", callback_data: `shield_${targetUserId}` }], 
+                [{ text: "🏃 Run", callback_data: `run_${targetUserId}` }]
+              ] 
+            }
           });
         }
       }
