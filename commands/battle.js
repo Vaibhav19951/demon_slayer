@@ -1,8 +1,9 @@
-// ==========================================
-// ⚔️ AUTOMATED CORPS BATTLE SYSTEM (battle.js)
-// ==========================================
+// ==========================================================
+// ⚔️ AUTOMATED CORPS BATTLE SYSTEM | VELIX OS V2.5
+// ==========================================================
 
-// Demon Pool Configuration
+const BATTLE_IMAGE = "https://i.pinimg.com/736x/52/f5/97/52f597b5ed03c1f59f54aa656be46c7d.jpg";
+
 const demonPool = [
     { name: "Hand Demon", hp: 300, attack: 25, rewardCoins: 120, rewardTokens: 0 },
     { name: "Rui (Lower Moon 5)", hp: 600, attack: 45, rewardCoins: 300, rewardTokens: 5 },
@@ -10,7 +11,6 @@ const demonPool = [
     { name: "Kokushibo (Upper Moon 1)", hp: 2500, attack: 120, rewardCoins: 1500, rewardTokens: 50 }
 ];
 
-// Active global battles tracking registry
 const activeBattles = new Map();
 
 module.exports = (bot) => {
@@ -19,206 +19,110 @@ module.exports = (bot) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
 
-        // Safe Core Shield Verification
         if (!global.economyDB) {
-            return bot.sendMessage(chatId, "🚨 **System Error:** Economy database engine core not detected. Please restart the bot.");
+            return bot.sendMessage(chatId, "🚨 **System Error:** Engine core not detected.");
         }
 
         let db = global.economyDB.getDB();
         db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
-        let p = db[userId];
 
         if (activeBattles.has(userId)) {
-            return bot.sendMessage(chatId, "⚔️ **Combat Lock!** You are already engaged in a mortal struggle. Finish that encounter first!");
+            return bot.sendMessage(chatId, "⚔️ **Combat Lock!** Finish your current battle first.");
         }
 
-        // Randomly pull a demon from the generator pool
         const demon = { ...demonPool[Math.floor(Math.random() * demonPool.length)] };
-        
-        // Calculate player combat stats based on inventory size / level matrix
-        let basePlayerHp = 500;
-        let basePlayerAtk = 40;
-
-        // Active tracking session blueprint
         const session = {
-            playerHp: basePlayerHp,
-            playerMaxHp: basePlayerHp,
-            playerAtk: basePlayerAtk,
-            demonName: demon.name,
-            demonHp: demon.hp,
-            demonMaxHp: demon.hp,
-            demonAtk: demon.attack,
-            rewardCoins: demon.rewardCoins,
-            rewardTokens: demon.rewardTokens,
-            messageId: null
+            playerHp: 500, playerMaxHp: 500, playerAtk: 40,
+            demonName: demon.name, demonHp: demon.hp, demonMaxHp: demon.hp, demonAtk: demon.attack,
+            rewardCoins: demon.rewardCoins, rewardTokens: demon.rewardTokens
         };
 
         activeBattles.set(userId, session);
 
-        const battleInterface = {
+        bot.sendPhoto(chatId, BATTLE_IMAGE, {
+            caption: `👹 **DEMON ENCOUNTER | ${demon.name}**\n` +
+                     `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                     `❤️ **Your HP:** \`500/500\` | ⚔️ **Atk:** \`40\`\n` +
+                     `🖤 **Demon HP:** \`${demon.hp}/${demon.hp}\` | 💢 **Atk:** \`${demon.attack}\`\n` +
+                     `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                     `Choose your breathing form:`,
+            parse_mode: "Markdown",
             reply_markup: JSON.stringify({
                 inline_keyboard: [
-                    [
-                        { text: "⚔️ Attack", callback_data: `slay_attack:${userId}` },
-                        { text: "🛡️ Defend", callback_data: `slay_defend:${userId}` }
-                    ],
-                    [
-                        { text: "🏃 Flee", callback_data: `slay_flee:${userId}` }
-                    ]
+                    [{ text: "⚔️ Attack", callback_data: `slay_attack:${userId}` }, { text: "🛡️ Defend", callback_data: `slay_defend:${userId}` }],
+                    [{ text: "🏃 Flee", callback_data: `slay_flee:${userId}` }]
                 ]
-            }),
-            parse_mode: "Markdown"
-        };
-
-        bot.sendMessage(chatId, 
-            `👹 **DEMON ENGCOUNTER | ENEMY SPOTTED**\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `A wild **${demon.name}** has broken through the perimeter lines!\n\n` +
-            `❤️ **Your HP:** \`${session.playerHp}/${session.playerMaxHp}\` | ⚔️ **Atk:** \`${session.playerAtk}\`\n` +
-            `🖤 **Demon HP:** \`${session.demonHp}/${session.demonMaxHp}\` | 💢 **Atk:** \`${session.demonAtk}\`\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `Choose your active breathing form form style combat action:`, 
-            battleInterface
-        ).then((sentMsg) => {
-            session.messageId = sentMsg.message_id;
+            })
         });
     });
 
-    // ==========================================
-    // 🎛️ BATTLE ENCOUNTER ACTION INTERCEPTOR
-    // ==========================================
     bot.on("callback_query", async (query) => {
-        const chatId = query.message.chat.id;
+        if (!query.data.startsWith("slay_")) return;
+
+        const [action, targetUserId] = query.data.split(":");
         const callerId = query.from.id.toString();
-        const dataPayload = query.data;
 
-        // 🔥 SHIELD: Agar battle button nahi hai, toh economy/spin ko bypass karne do!
-        if (!dataPayload.startsWith("slay_attack:") && !dataPayload.startsWith("slay_defend:") && !dataPayload.startsWith("slay_flee:")) {
-            return; 
-        }
-
-        const chunks = dataPayload.split(":");
-        const targetUserId = chunks[1];
-
-        // Anti-hijacking security verification lock
         if (targetUserId !== callerId) {
-            return bot.answerCallbackQuery(query.id, {
-                text: "❌ This is not your battle arena! Run /battle to spawn your own demon.",
-                show_alert: true
-            });
+            return bot.answerCallbackQuery(query.id, { text: "❌ Not your battle!", show_alert: true });
         }
 
         const session = activeBattles.get(callerId);
-        if (!session) {
-            bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
-            return bot.answerCallbackQuery(query.id, { text: "⚠️ Battle session has expired or concluded.", show_alert: true });
-        }
+        if (!session) return bot.answerCallbackQuery(query.id, { text: "⚠️ Battle session expired.", show_alert: true });
 
         let actionLog = "";
 
-        if (dataPayload.startsWith("slay_attack:")) {
-            // Player deals damage
+        if (action === "slay_attack") {
             let pDmg = Math.floor(Math.random() * 20) + session.playerAtk;
             session.demonHp -= pDmg;
-            actionLog += `⚔️ You executed a breathing form dealing **💥 ${pDmg}** damage!\n`;
+            actionLog += `⚔️ You dealt **💥 ${pDmg}** damage!\n`;
 
             if (session.demonHp <= 0) {
-                // Demon defeated victory sequence
                 activeBattles.delete(callerId);
-                
                 let db = global.economyDB.getDB();
-                db[callerId] = global.economyDB.sanitizeUserObject(db[callerId]);
-                
                 db[callerId].coins += session.rewardCoins;
-                db[callerId].mythic += session.rewardTokens; // giving tokens as mythic asset
-                
+                db[callerId].mythic += session.rewardTokens;
                 global.economyDB.saveDB(db);
-
-                await bot.editMessageText(
-                    `🏆 **VICTORY REPORT | MISSION SUCCESS**\n` +
-                    `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                    `You successfully decapitated **${session.demonName}**!\n\n` +
-                    `💰 **Rewards Recovered:**\n` +
-                    `• 🪙 +${session.rewardCoins} Crow Coins\n` +
-                    `• ✨ +${session.rewardTokens} Mythic Tokens\n` +
-                    `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                    `Status: Safe perimeter established. Account balances synced.`,
-                    { chat_id: chatId, message_id: query.message.message_id, parse_mode: "Markdown" }
-                ).catch(() => {});
-                
-                return bot.answerCallbackQuery(query.id);
+                return bot.editMessageCaption(`🏆 **VICTORY!** You defeated ${session.demonName}. [+${session.rewardCoins} Coins]`, { chat_id: query.message.chat.id, message_id: query.message.message_id });
             }
-
-            // Demon counter attacks if alive
-            let dDmg = Math.floor(Math.random() * 15) + (session.demonAtk - 10);
-            dDmg = Math.max(5, dDmg);
-            session.playerHp -= dDmg;
-            actionLog += `👹 **${session.demonName}** retaliated dealing **💔 ${dDmg}** damage to you!\n`;
+            session.playerHp -= Math.max(5, Math.floor(Math.random() * 15) + (session.demonAtk - 10));
         }
 
-        if (dataPayload.startsWith("slay_defend:")) {
-            // Defend minimizes incoming damage and heals a fraction
-            let heal = Math.floor(Math.random() * 15) + 10;
-            session.playerHp = Math.min(session.playerMaxHp, session.playerHp + heal);
-            
-            let dDmg = Math.floor(Math.random() * 10) + 5; // Heavily mitigated damage
-            session.playerHp -= dDmg;
-
-            actionLog += `🛡️ You took a defensive posture, bracing for impact! (+❤️ ${heal} HP)\n`;
-            actionLog += `👹 Enemy strike mitigated! You took only **💔 ${dDmg}** damage.\n`;
+        if (action === "slay_defend") {
+            session.playerHp = Math.min(session.playerMaxHp, session.playerHp + 15);
+            session.playerHp -= Math.floor(Math.random() * 10) + 5;
+            actionLog += `🛡️ Defensive stance! Regained HP, mitigated damage.\n`;
         }
 
-        if (dataPayload.startsWith("slay_flee:")) {
+        if (action === "slay_flee") {
             activeBattles.delete(callerId);
-            bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
-            bot.sendMessage(chatId, `🏃 You threw a smoke bomb and successfully escaped from **${session.demonName}**!`);
-            return bot.answerCallbackQuery(query.id);
+            return bot.deleteMessage(query.message.chat.id, query.message.message_id);
         }
 
-        // Check Defeat status conditions
         if (session.playerHp <= 0) {
             activeBattles.delete(callerId);
-            await bot.editMessageText(
-                `💀 **DIED IN BATTLE | MISSION FAILED**\n` +
-                `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                `You were completely overpowered by **${session.demonName}** and collapsed on the battlefield.\n\n` +
-                `🚑 Kakushi recovery teams managed to drag your body back to the Butterfly Mansion. You lost no assets but need rest.`,
-                { chat_id: chatId, message_id: query.message.message_id, parse_mode: "Markdown" }
-            ).catch(() => {});
-            
-            return bot.answerCallbackQuery(query.id);
+            return bot.editMessageCaption(`💀 **DEFEATED.** You were overpowered by ${session.demonName}.`, { chat_id: query.message.chat.id, message_id: query.message.message_id });
         }
 
-        // Update main rendering frame if both fighters are still standing
-        const updatedInterface = {
-            inline_keyboard: [
-                [
-                    { text: "⚔️ Attack", callback_data: `slay_attack:${callerId}` },
-                    { text: "🛡️ Defend", callback_data: `slay_defend:${callerId}` }
-                ],
-                [
-                    { text: "🏃 Flee", callback_data: `slay_flee:${callerId}` }
-                ]
-            ]
-        };
-
-        await bot.editMessageText(
-            `⚔️ **COMBAT ENCOUNTER IN PROGRESS**\n` +
+        await bot.editMessageCaption(
+            `⚔️ **COMBAT IN PROGRESS**\n` +
             `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `${actionLog}` +
-            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `${actionLog}\n` +
             `❤️ **Your HP:** \`${session.playerHp}/${session.playerMaxHp}\`\n` +
             `🖤 **${session.demonName} HP:** \`${session.demonHp}/${session.demonMaxHp}\`\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-            `Maintain concentration! Choose your next move:`,
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
             {
-                chat_id: chatId,
+                chat_id: query.message.chat.id,
                 message_id: query.message.message_id,
-                reply_markup: JSON.stringify(updatedInterface),
-                parse_mode: "Markdown"
+                parse_mode: "Markdown",
+                reply_markup: JSON.stringify({
+                    inline_keyboard: [
+                        [{ text: "⚔️ Attack", callback_data: `slay_attack:${callerId}` }, { text: "🛡️ Defend", callback_data: `slay_defend:${callerId}` }],
+                        [{ text: "🏃 Flee", callback_data: `slay_flee:${callerId}` }]
+                    ]
+                })
             }
         ).catch(() => {});
 
-        return bot.answerCallbackQuery(query.id);
+        bot.answerCallbackQuery(query.id);
     });
 };
