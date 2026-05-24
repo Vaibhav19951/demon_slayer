@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Global Database Path
-const dbPath = path.join(__dirname, 'data', 'players.json');
+const dbPath = path.join(__dirname, '..', 'data', 'players.json');
 
 // Mock Assets Configuration Pools
 const normalCards = [
@@ -285,7 +285,6 @@ module.exports = (bot) => {
         let p = db[userId];
 
         if (!match[1]) {
-            // 🔥 CRITICAL PROTECTION: Embedding Owner's ID into the callback data payload structure
             const platformMenu = {
                 reply_markup: JSON.stringify({
                     inline_keyboard: [
@@ -460,11 +459,15 @@ module.exports = (bot) => {
         const callerId = query.from.id.toString();
         const dataPayload = query.data;
 
-        // 🔥 CRITICAL INTERACTION SHIELD: Stop cross-user execution hijacking
+        // 🔥 SHIELD TRIGGER: Agar button ka data spin system ka nahi hai, toh bina intercept kiye bypass karo!
+        if (!dataPayload.startsWith("select_platform:") && !dataPayload.startsWith("btn_spin:") && !dataPayload.startsWith("spin_back_main:")) {
+            return; 
+        }
+
         const chunks = dataPayload.split(":");
         const originalOwnerId = chunks[chunks.length - 1];
 
-        if (originalOwnerId && originalOwnerId !== callerId && dataPayload !== "spin_back_main") {
+        if (originalOwnerId && originalOwnerId !== callerId && !dataPayload.startsWith("spin_back_main")) {
             return bot.answerCallbackQuery(query.id, {
                 text: "❌ This is not your personal dashboard! Run /spin to open your own menu.",
                 show_alert: true
