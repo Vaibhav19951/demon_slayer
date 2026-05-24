@@ -1,133 +1,134 @@
-console.log("💰 ECONOMY ENGINE RUNNING WITH SYNC FIX (VELIX OS V2.5)");
+console.log("💰 ECONOMY ENGINE v2.5 [FULL INTEGRATION]");
 
 const fs = require("fs");
 const path = require("path");
-
-// ✅ process.cwd() use karne se bot hamesha root ke data/players.json ko target karega, folder structure chahe jo ho
 const playerFile = path.join(process.cwd(), "data", "players.json");
 
-// Centralized DB Helper
 const getDB = () => {
     try {
         if (!fs.existsSync(playerFile)) return {};
         return JSON.parse(fs.readFileSync(playerFile, "utf8"));
-    } catch (e) { 
-        console.error("🔥 Economy Read Error:", e);
-        return {}; 
-    }
+    } catch (e) { return {}; }
 };
 
 const saveDB = (data) => {
     try {
-        fs.writeFileSync(playerFile, JSON.stringify(data, null, 2), "utf8");
-    } catch (e) {
-        console.error("🔥 Economy Write Error:", e);
-    }
+        const tempPath = playerFile + ".tmp";
+        fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), "utf8");
+        fs.renameSync(tempPath, playerFile);
+    } catch (e) { console.error("🔥 Economy Write Error:", e); }
 };
 
 module.exports = (bot) => {
 
-    // ==========================================
-    // 1. BALANCE COMMAND (ALIGNED WITH PROFILE)
-    // ==========================================
+    const ensureUser = (userId) => {
+        let db = getDB();
+        if (!db[userId]) {
+            db[userId] = { 
+                coins: 500, crystals: 0, mythic: 0, exp: 0, level: 1, 
+                last_daily: "", active_task: null 
+            };
+            saveDB(db);
+        }
+        return db;
+    };
+
+    const assignTask = (user) => {
+        const pool = [
+            { id: "hunt", desc: "Hunt 5 demons", target: 5 },
+            { id: "battle", desc: "Play 10 battles", target: 10 },
+            { id: "work", desc: "Work 5 times", target: 5 }
+        ];
+        const t = pool[Math.floor(Math.random() * pool.length)];
+        user.active_task = { ...t, progress: 0, completed: false };
+    };
+
+    // 1. BALANCE & PROFILE
     bot.onText(/\/(?:balance|bal)/, (msg) => {
         const userId = msg.from.id.toString();
-        const db = getDB();
-        const p = db[userId];
-
-        if (!p) return bot.sendMessage(msg.chat.id, "❌ Please use /profile or /start to register first!");
-        
-        // Ensure structural fields are up to date
-        const pocketCash = p.coins !== undefined ? Number(p.coins) : 0;
-        const bankBalance = p.bank !== undefined ? Number(p.bank) : 0;
-        const slayerTokens = p.tokens !== undefined ? Number(p.tokens) : 0;
-
-        const text = `⚔️ **SLAYER BALANCES** ⚔️\n━━━━━━━━━━━━━━━━━━━━\n👛 **Wallet Cash:** \`${pocketCash.toLocaleString()} coins\`\n🏦 **Personal Bank:** \`${bankBalance.toLocaleString()} coins\`\n🎴 **Slayer Tokens:** \`${slayerTokens.toLocaleString()} tokens\`\n━━━━━━━━━━━━━━━━━━━━\nℹ️ *Use \`/dep [amount]\` to move cash to bank!*`;
-        
+        let db = ensureUser(userId);
+        let p = db[userId];
+        const text = `💠 **VELIX OS | PROFILE** 💠\n━━━━━━━━━━━━━━━━━━━━\n💰 **Coins:** \`${Number(p.coins).toLocaleString()}\`\n💎 **Crystals:** \`${Number(p.crystals).toLocaleString()}\`\n✨ **Mythic Tokens:** \`${Number(p.mythic).toLocaleString()}\`\n📊 **Level:** ${p.level} (XP: ${p.exp})\n━━━━━━━━━━━━━━━━━━━━`;
         bot.sendMessage(msg.chat.id, text, { parse_mode: "Markdown" });
     });
 
-    // ==========================================
-    // 2. WORK COMMAND
-    // ==========================================
+    // 2. TASK SYSTEM
+    bot.onText(/\/task/, (msg) => {
+        const userId = msg.from.id.toString();
+        let db = ensureUser(userId);
+        let p = db[userId];
+        const today = new Date().toISOString().split('T')[0];
+
+        if (!p.active_task || p.last_daily !== today) {
+            assignTask(p);
+            p.last_daily = today;
+            saveDB(db);
+        }
+
+        const t = p.active_task;
+        const status = t.completed ? "✅ COMPLETED" : "⏳ PENDING";
+        const text = `📋 **DAILY MISSION**\n\nTask: ${t.desc}\nStatus: ${status}\nProgress: [${t.progress}/${t.target}]\n\nReward: 20 Mythic + 50 XP`;
+        bot.sendMessage(msg.chat.id, text, { parse_mode: "Markdown" });
+    });
+
+    // 3. CONVERTER
+    bot.onText(/\/convert (.+) (.+)/, (msg, match) => {
+        const userId = msg.from.id.toString();
+        let db = ensureUser(userId);
+        const type = match[1].toLowerCase();
+        const amount = Number(match[2]);
+
+        if (type === "c2cr") { // 1M Coins = 10k Crystals
+            const cost = amount * 100;
+            if (db[userId].coins < cost) return bot.sendMessage(msg.chat.id, "❌ Not enough coins.");
+            db[userId].coins -= cost;
+            db[userId].crystals += amount;
+            bot.sendMessage(msg.chat.id, `🔄 Converted ${cost} Coins to ${amount} Crystals!`);
+        } else if (type === "cr2mt") { // 10k Crystals = 100 Tokens
+            const cost = amount * 100;
+            if (db[userId].crystals < cost) return bot.sendMessage(msg.chat.id, "❌ Not enough crystals.");
+            db[userId].crystals -= cost;
+            db[userId].mythic += amount;
+            bot.sendMessage(msg.chat.id, `🔄 Converted ${cost} Crystals to ${amount} Mythic Tokens!`);
+        }
+        saveDB(db);
+    });
+
+    // 4. SPIN (LUCKY DRAW)
+    bot.onText(/\/spin/, (msg) => {
+        const userId = msg.from.id.toString();
+        let db = ensureUser(userId);
+        if (db[userId].coins >= 1200) db[userId].coins -= 1200;
+        else if (db[userId].mythic >= 5) db[userId].mythic -= 5;
+        else return bot.sendMessage(msg.chat.id, "❌ Need 1200 Coins or 5 Mythic Tokens.");
+
+        const roll = Math.random() * 100;
+        const prize = roll < 70 ? "Basic Weapon 🗡️" : roll < 90 ? "Common Card 🃏" : "Rare Card 🌟";
+        
+        saveDB(db);
+        bot.sendMessage(msg.chat.id, `🎡 **LUCKY SPIN**\nResult: You won ${prize}`);
+    });
+
+    // 5. WORK (WITH TASK INTEGRATION)
     bot.onText(/\/work/, (msg) => {
         const userId = msg.from.id.toString();
-        let db = getDB();
-        
-        if (!db[userId]) return bot.sendMessage(msg.chat.id, "❌ Register with /profile first!");
-
-        const earnings = Math.floor(Math.random() * 150) + 50;
-        db[userId].coins = Number(db[userId].coins || 0) + earnings;
-        
-        saveDB(db); 
-        
-        bot.sendMessage(msg.chat.id, `💼 You worked and earned *${earnings} coins*! Added to your wallet.`, { parse_mode: "Markdown" });
-    });
-
-    // ==========================================
-    // 3. PERSONAL BANK DEPOSIT COMMAND
-    // ==========================================
-    bot.onText(/\/dep(?: (.+))?/, (msg, match) => {
-        const userId = msg.from.id.toString();
-        let db = getDB();
+        let db = ensureUser(userId);
         let p = db[userId];
         
-        if (!p) return bot.sendMessage(msg.chat.id, "❌ Register with /profile first!");
-        if (p.coins === undefined) p.coins = 0;
-        if (p.bank === undefined) p.bank = 0;
-
-        if (!match[1]) {
-            return bot.sendMessage(msg.chat.id, "ℹ️ *Usage:* \`/dep [amount]\` or \`/dep all\`", { parse_mode: "Markdown" });
-        }
-
-        let amount = match[1].trim().toLowerCase() === "all" ? Number(p.coins) : Number(match[1]);
-
-        if (isNaN(amount) || amount <= 0) {
-            return bot.sendMessage(msg.chat.id, "❌ Please specify a valid amount to deposit.");
-        }
-
-        if (amount > Number(p.coins)) {
-            return bot.sendMessage(msg.chat.id, `❌ Insufficient Cash! You only have \`${Number(p.coins).toLocaleString()}\` coins in your wallet.`, { parse_mode: "Markdown" });
-        }
-
-        p.coins = Number(p.coins) - amount;
-        p.bank = Number(p.bank) + amount;
+        const earnings = 200;
+        p.coins += earnings;
         
-        saveDB(db); 
-        bot.sendMessage(msg.chat.id, `🏦 **Personal Bank Deposit:** Successfully shifted \`${amount.toLocaleString()} coins\` into your vault!`, { parse_mode: "Markdown" });
+        // Task Update Logic
+        if (p.active_task && p.active_task.id === "work" && !p.active_task.completed) {
+            p.active_task.progress += 1;
+            if (p.active_task.progress >= p.active_task.target) {
+                p.active_task.completed = true;
+                p.mythic += 20; p.exp += 50;
+                bot.sendMessage(msg.chat.id, "🎉 Task Completed! +20 Mythic Tokens & +50 XP!");
+            }
+        }
+        
+        saveDB(db);
+        bot.sendMessage(msg.chat.id, `💼 Worked! Earned ${earnings} coins.`);
     });
-
-    // ==========================================
-    // 4. PERSONAL BANK WITHDRAW COMMAND
-    // ==========================================
-    bot.onText(/\/with(?: (.+))?/, (msg, match) => {
-        const userId = msg.from.id.toString();
-        let db = getDB();
-        let p = db[userId];
-        
-        if (!p) return bot.sendMessage(msg.chat.id, "❌ Register with /profile first!");
-        if (p.coins === undefined) p.coins = 0;
-        if (p.bank === undefined) p.bank = 0;
-
-        if (!match[1]) {
-            return bot.sendMessage(msg.chat.id, "ℹ️ *Usage:* \`/with [amount]\` or \`/with all\`", { parse_mode: "Markdown" });
-        }
-
-        let amount = match[1].trim().toLowerCase() === "all" ? Number(p.bank) : Number(match[1]);
-
-        if (isNaN(amount) || amount <= 0) {
-            return bot.sendMessage(msg.chat.id, "❌ Please specify a valid amount to withdraw.");
-        }
-
-        if (amount > Number(p.bank)) {
-            return bot.sendMessage(msg.chat.id, `❌ Insufficient Funds! You only have \`${Number(p.bank).toLocaleString()}\` coins in your bank.`, { parse_mode: "Markdown" });
-        }
-
-        p.bank = Number(p.bank) - amount;
-        p.coins = Number(p.coins) + amount;
-        
-        saveDB(db); 
-        bot.sendMessage(msg.chat.id, `🔓 **Personal Bank Withdrawal:** Moved \`${amount.toLocaleString()} coins\` back into your pocket wallet!`, { parse_mode: "Markdown" });
-    });
-
 };
