@@ -10,8 +10,8 @@ const battles = {};
 
 module.exports = (bot) => {
   
-  // Dynamic Mission Progression Monitor Engine
-  const incrementTaskProgress = (userId, freshPlayers, msg) => {
+  // Dynamic Mission Progression Monitor Engine (Async fallback enabled)
+  const incrementTaskProgress = async (userId, freshPlayers, msg) => {
     let p = freshPlayers[userId];
 
     if (p && p.active_task && p.active_task.id === "battle" && !p.active_task.completed) {
@@ -23,7 +23,7 @@ module.exports = (bot) => {
         p.mythic = Number(p.mythic || 0) + 20; // Token Reward aligned to mythic
         p.exp = Number(p.exp || 0) + 50;       // EXP Reward aligned to exp
         
-        bot.sendMessage(msg.chat.id, `🎉 **DAILY MISSION COMPLETED!**\n✨ User: *${msg.from.first_name}*\n🎁 Rewards Unlocked: *+20 Mythic Tokens* & *+50 XP*!`);
+        await bot.sendMessage(msg.chat.id, `🎉 **DAILY MISSION COMPLETED!**\n✨ User: *${msg.from.first_name}*\n🎁 Rewards Unlocked: *+20 Mythic Tokens* & *+50 XP*!`, { parse_mode: "Markdown" }).catch(() => {});
       }
     }
   };
@@ -88,96 +88,106 @@ module.exports = (bot) => {
         }
       });
     }
-    else if (action === "shield") {
-      battle.shield = true;
-      bot.answerCallbackQuery(query.id, { text: "🛡 Shield Activated!" });
-      return;
-    }
-    else if (action === "attack") {
-      const playerDamage = Math.floor(Math.random() * 20) + 15;
-      battle.demonHp -= playerDamage;
+    else {
+      let turnLogMessage = "";
+      let playerDamage = 0;
+      
+      // SHIELD ACTIVATION LOGIC (Fix: No more hard return, runs the loop fluently)
+      if (action === "shield") {
+        battle.shield = true;
+        bot.answerCallbackQuery(query.id, { text: "🛡 Shield Activated!" });
+        turnLogMessage = `🛡 **You raised your defense shield!**\n`;
+      }
+      
+      // ATTACK PROCESSING LOGIC
+      if (action === "attack") {
+        playerDamage = Math.floor(Math.random() * 20) + 15;
+        battle.demonHp -= playerDamage;
+        turnLogMessage = `🗡 You dealt ${playerDamage} dmg!\n`;
 
-      // WIN CONDITION REACHED
-      if (battle.demonHp <= 0) {
-        let freshPlayers = {};
-        try {
-          if (fs.existsSync(playerFile)) {
-            freshPlayers = JSON.parse(fs.readFileSync(playerFile, "utf8"));
-          }
-        } catch (err) {
-          console.error("🔥 Error reading player file database:", err);
-        }
-
-        if (!freshPlayers[targetUserId]) {
-          freshPlayers[targetUserId] = { coins: 500, bank: 0, crystals: 0, mythic: 0, level: 1, exp: 0, guildId: null, inventory: [], active_task: null };
-        }
-
-        const rCoins = parseInt(demon.reward) || 50;
-        const rXp = parseInt(demon.exp) || 20;
-
-        // Structured Database alignment mapping keys to profile architecture
-        const currentCoins = Number(freshPlayers[targetUserId].coins || 0);
-        const currentXp = Number(freshPlayers[targetUserId].exp || 0); // Corrected from xp to exp
-        let currentLevel = Number(freshPlayers[targetUserId].level || 1);
-
-        freshPlayers[targetUserId].coins = currentCoins + Number(rCoins);
-        
-        // Progression processing stack
-        let totalXp = currentXp + Number(rXp);
-        let xpNeeded = currentLevel * 100;
-        let levelUpMessage = "";
-
-        while (totalXp >= xpNeeded) {
-          totalXp -= xpNeeded;
-          currentLevel += 1;
-          xpNeeded = currentLevel * 100;
-          levelUpMessage = `\n\n🎉 **LEVEL UP!** You have reached **Level ${currentLevel}**!`;
-        }
-
-        freshPlayers[targetUserId].level = currentLevel;
-        freshPlayers[targetUserId].exp = totalXp < 0 ? 0 : totalXp; // Corrected from xp to exp
-
-        // Daily task progress evaluation sequence before data dump commit
-        incrementTaskProgress(targetUserId, freshPlayers, query.message);
-
-        try {
-          fs.writeFileSync(playerFile, JSON.stringify(freshPlayers, null, 2), "utf8");
-          console.log(`✅ Data saved for ${targetUserId}. Coins: ${freshPlayers[targetUserId].coins}, EXP: ${freshPlayers[targetUserId].exp}, LVL: ${freshPlayers[targetUserId].level}`);
-        } catch (err) {
-          console.error("🔥 Error saving file to database storage:", err);
-        }
-
-        delete battles[targetUserId];
-
-        await bot.editMessageCaption(`🏆 **YOU WON!**\n💰 **+${rCoins} Coins**\n✨ **+${rXp} XP**${levelUpMessage}\n\n✅ Profile synced live with database.`, { 
-          chat_id: chatId, 
-          message_id: messageId, 
-          parse_mode: "Markdown" 
-        });
-      } 
-      else {
-        // Enemy Retaliation Turn Phase
-        let dDmg = Math.floor(Math.random() * (demon.attack || 15)) + 5;
-        if (battle.shield) { 
-          dDmg = Math.floor(dDmg / 2); 
-          battle.shield = false; 
-        }
-        battle.playerHp -= dDmg;
-
-        if (battle.playerHp <= 0) {
-          delete battles[targetUserId];
-          await bot.editMessageCaption(`☠️ **You were defeated by ${demon.name}!**`, { chat_id: chatId, message_id: messageId, parse_mode: "Markdown" });
-        } else {
-          await bot.editMessageCaption(`🗡 You dealt ${playerDamage} dmg!\n👹 Demon HP: ${battle.demonHp}\n❤️ Your HP: ${battle.playerHp}`, {
-            chat_id: chatId, message_id: messageId, parse_mode: "Markdown",
-            reply_markup: { 
-              inline_keyboard: [
-                [{ text: "🗡 Attack", callback_data: `attack_${targetUserId}` }, { text: "🛡 Shield", callback_data: `shield_${targetUserId}` }], 
-                [{ text: "🏃 Run", callback_data: `run_${targetUserId}` }]
-              ] 
+        // WIN CONDITION REACHED
+        if (battle.demonHp <= 0) {
+          let freshPlayers = {};
+          try {
+            if (fs.existsSync(playerFile)) {
+              freshPlayers = JSON.parse(fs.readFileSync(playerFile, "utf8"));
             }
+          } catch (err) {
+            console.error("🔥 Error reading player file database:", err);
+          }
+
+          if (!freshPlayers[targetUserId]) {
+            freshPlayers[targetUserId] = { coins: 500, bank: 0, crystals: 0, mythic: 0, level: 1, exp: 0, guildId: null, inventory: [], active_task: null };
+          }
+
+          const rCoins = parseInt(demon.reward) || 50;
+          const rXp = parseInt(demon.exp) || 20;
+
+          const currentCoins = Number(freshPlayers[targetUserId].coins || 0);
+          const currentXp = Number(freshPlayers[targetUserId].exp || 0);
+          let currentLevel = Number(freshPlayers[targetUserId].level || 1);
+
+          freshPlayers[targetUserId].coins = currentCoins + Number(rCoins);
+          
+          let totalXp = currentXp + Number(rXp);
+          let xpNeeded = currentLevel * 100;
+          let levelUpMessage = "";
+
+          while (totalXp >= xpNeeded) {
+            totalXp -= xpNeeded;
+            currentLevel += 1;
+            xpNeeded = currentLevel * 100;
+            levelUpMessage = `\n\n🎉 **LEVEL UP!** You have reached **Level ${currentLevel}**!`;
+          }
+
+          freshPlayers[targetUserId].level = currentLevel;
+          freshPlayers[targetUserId].exp = totalXp < 0 ? 0 : totalXp;
+
+          // Process task parameters safely
+          await incrementTaskProgress(targetUserId, freshPlayers, query.message);
+
+          try {
+            fs.writeFileSync(playerFile, JSON.stringify(freshPlayers, null, 2), "utf8");
+          } catch (err) {
+            console.error("🔥 Error saving file to database storage:", err);
+          }
+
+          delete battles[targetUserId];
+
+          return await bot.editMessageCaption(`🏆 **YOU WON!**\n💰 **+${rCoins} Coins**\n✨ **+${rXp} XP**${levelUpMessage}\n\n✅ Profile synced live with database.`, { 
+            chat_id: chatId, 
+            message_id: messageId, 
+            parse_mode: "Markdown" 
           });
         }
+      }
+
+      // 👹 ENEMY RETALIATION PHASE (Triggers on either Attack or Shield)
+      let dDmg = Math.floor(Math.random() * (demon.attack || 15)) + 5;
+      if (battle.shield) { 
+        dDmg = Math.floor(dDmg / 2); 
+        battle.shield = false; // Reset shield matrix state for the next turn
+        turnLogMessage += `👹 ${demon.name} attacks! Your shield blocked half damage, taking \`${dDmg} dmg\`.\n`;
+      } else {
+        turnLogMessage += `👹 ${demon.name} attacks, dealing \`${dDmg} dmg\`!\n`;
+      }
+      battle.playerHp -= dDmg;
+
+      // DEFEAT CONDITION REACHED
+      if (battle.playerHp <= 0) {
+        delete battles[targetUserId];
+        await bot.editMessageCaption(`☠️ **You were defeated by ${demon.name}!**`, { chat_id: chatId, message_id: messageId, parse_mode: "Markdown" });
+      } else {
+        // Refresh frame status layout seamlessly
+        await bot.editMessageCaption(`${turnLogMessage}\n👹 Demon HP: ${battle.demonHp}\n❤️ Your HP: ${battle.playerHp}`, {
+          chat_id: chatId, message_id: messageId, parse_mode: "Markdown",
+          reply_markup: { 
+            inline_keyboard: [
+              [{ text: "🗡 Attack", callback_data: `attack_${targetUserId}` }, { text: "🛡 Shield", callback_data: `shield_${targetUserId}` }], 
+              [{ text: "🏃 Run", callback_data: `run_${targetUserId}` }]
+            ] 
+          }
+        });
       }
     }
     bot.answerCallbackQuery(query.id);
