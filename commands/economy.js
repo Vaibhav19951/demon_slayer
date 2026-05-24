@@ -176,6 +176,109 @@ module.exports = (bot) => {
     });
 
     // ==========================================
+    // ⚔️ 4.5 /upgrade (CHARACTER LEVEL-UP ENGINE)
+    // ==========================================
+    bot.onText(/\/upgrade(?:\s+(.+))?/, (msg, match) => {
+        const chatId = msg.chat.id;
+        const userId = msg.from.id.toString();
+
+        let db = getDB();
+        db[userId] = sanitizeUserObject(db[userId]);
+        let p = db[userId];
+
+        const inputChar = match[1] ? match[1].trim().toLowerCase() : "";
+
+        if (!inputChar) {
+            return bot.sendMessage(chatId, 
+                `⚔️ **NICHIRIN FORGE | UPGRADE STATION**\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `❌ **Syntax Error!** Please specify a valid character name.\n` +
+                `👉 *Usage:* \`/upgrade tanjiro\` or \`/upgrade nezuko\`\n\n` +
+                `ℹ️ Every level upgrade requires **5x Character Essence**.\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+                { parse_mode: "Markdown" }
+            );
+        }
+
+        // 1. Check if user owns the base character in inventory
+        let baseCharIndex = p.inventory.findIndex(item => {
+            let name = typeof item === "string" ? item : (item.name || "");
+            return name.toLowerCase().includes(inputChar);
+        });
+
+        if (baseCharIndex === -1) {
+            return bot.sendMessage(chatId, `❌ **Slayer Alert!** You do not own this character in your primary squad grid yet. Extraction required via /spin first.`);
+        }
+
+        let rawCharacter = p.inventory[baseCharIndex];
+        
+        // 2. Structural data transformation (String to Level Object converting engine)
+        let charObject = { name: "", level: 1 };
+        if (typeof rawCharacter === "string") {
+            charObject.name = rawCharacter;
+            charObject.level = 1;
+        } else {
+            charObject.name = rawCharacter.name || "Unknown Slayer";
+            charObject.level = parseInt(rawCharacter.level) || 1;
+        }
+
+        // Max Level Guard (Cap at Level 5 to maintain combat balancing metrics)
+        if (charObject.level >= 5) {
+            return bot.sendMessage(chatId, `👑 **Max Horizon Reached!** \`${charObject.name}\` is already at **Level 5 (Max Apex Rank)**.`);
+        }
+
+        // 3. Dynamic Identification of Essence Key inside player profile storage data array
+        // Agar input "tanjiro" hai toh id mapped to "tanjiro_essence"
+        let matchedMythic = mythicCards.find(c => c.name.toLowerCase().includes(inputChar));
+        let charId = matchedMythic ? matchedMythic.id.split('_')[0] : inputChar.replace(/\s+/g, '');
+        let essenceKey = `${charId}_essence`;
+
+        let currentEssenceCount = parseInt(p.materials[essenceKey]) || 0;
+        const requiredEssence = 5;
+
+        if (currentEssenceCount < requiredEssence) {
+            return bot.sendMessage(chatId, 
+                `🧪 **RESOURCES DEPLETED | UPGRADE FAILED**\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Insufficient core components for the ascension matrix:\n\n` +
+                `• Character: \`${charObject.name}\` (Lv. ${charObject.level})\n` +
+                `• Required: 🧪 \`${requiredEssence}\` ${essenceKey.toUpperCase()}\n` +
+                `• Available: 🧪 \`${currentEssenceCount}\` ${essenceKey.toUpperCase()}\n\n` +
+                `💡 *Tip:* Pull duplicates from **Mythic Spin** to automatically accumulate essence.\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+                { parse_mode: "Markdown" }
+            );
+        }
+
+        // 4. Execution Logic Loop: Deduct assets & Increment structural Level variable state
+        p.materials[essenceKey] = currentEssenceCount - requiredEssence;
+        charObject.level += 1;
+
+        // Save updated object back inside the internal local inventory stack
+        p.inventory[baseCharIndex] = charObject;
+
+        // Anti-NaN check protection injection layer before saving state parameters back to system disk
+        db[userId] = sanitizeUserObject(p);
+        saveDB(db);
+
+        // Power scaling calculation display node variables metrics
+        let basePower = charObject.level * 150;
+        let originalPower = (charObject.level - 1) * 150;
+
+        bot.sendMessage(chatId, 
+            `🔥 **BREATHING ASCENSION COMPLETED!**\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `The target soul matrix has successfully broken through its limits!\n\n` +
+            `⚔️ **Character:** \`${charObject.name}\`\n` +
+            `📈 **Rank Evolution:** Level \`${charObject.level - 1}\` ➔ **Level \`${charObject.level}\`**\n` +
+            `🔱 **Combat Power:** \`${originalPower}\` ➔ \`${basePower} CP\`\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `🧪 *Deducted 5x ${essenceKey.toUpperCase()} from storage bank material slots.*`,
+            { parse_mode: "Markdown" }
+        );
+    });
+    
+    // ==========================================
     // 🏮 5. /spin (TWO-STEP BUTTON KEYBOARD SYSTEM)
     // ==========================================
     bot.onText(/\/spin(?:\s+(\w+))?(?:\s+(\d+))?/, async (msg, match) => {
