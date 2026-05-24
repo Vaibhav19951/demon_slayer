@@ -1,3 +1,5 @@
+console.log("⚙️ VELIX MASTER CONTROL ENGINE INITIALIZED (V2.5 ARCHITECTURE)");
+
 const fs = require("fs");
 const path = require("path");
 
@@ -30,16 +32,23 @@ const saveAll = () => {
 const OWNER_ID = "2086993762";
 const isOwner = (msg) => msg.from.id.toString() === OWNER_ID;
 
+// Target player constructor map aligning to profile system architecture
 const getPlayer = (id) => {
   if (!players[id]) {
-    players[id] = { coins: 0, mythicalCrystals: 0, inventory: [], level: 1, xp: 0 };
+    players[id] = { coins: 0, crystals: 0, mythic: 0, level: 1, exp: 0, inventory: [] };
     saveAll();
   }
+  // Data structural maintenance checks
   if (!players[id].inventory) players[id].inventory = [];
+  if (players[id].mythicalCrystals !== undefined) { 
+    // Legacy schema clean-up redirect pipeline if database structure holds old variables
+    players[id].mythic = Number(players[id].mythic || 0) + Number(players[id].mythicalCrystals || 0);
+    delete players[id].mythicalCrystals;
+    saveAll();
+  }
   return players[id];
 };
 
-// Username se UserID nikalne ka helper
 const resolveUserByTag = (mentionStr) => {
   const cleanTag = mentionStr.replace("@", "").trim().toLowerCase();
   for (const [id, profile] of Object.entries(players)) {
@@ -73,9 +82,11 @@ module.exports = (bot) => {
       {
         caption: `👑 **VELIX MASTER ARCHITECT CONTROL MATRIX**\n\n` +
                  `💰 \`/addcoins ID AMOUNT\`\n` +
-                 `💰 \`/removecoins ID AMOUNT\`\n` +
-                 `💎 \`/addtokens ID AMOUNT\`\n` +
-                 `💎 \`/removetokens ID AMOUNT\`\n\n` +
+                 `💰 \`/removecoins ID AMOUNT\`\n\n` +
+                 `💎 \`/addcrystals ID AMOUNT\`\n` +
+                 `💎 \`/removecrystals ID AMOUNT\`\n\n` +
+                 `✨ \`/addtokens ID AMOUNT\`\n` +
+                 `✨ \`/removetokens ID AMOUNT\`\n\n` +
                  `🧬 \`/addcharacter @user/ID card_id\`\n` +
                  `🗑️ \`/removecharacter USERID CharacterID\`\n\n` +
                  `👤 \`/checkplayer ID\`\n` +
@@ -97,28 +108,26 @@ module.exports = (bot) => {
 
     const parts = match[1].trim().split(/\s+/);
     if (parts.length < 2) {
-      return bot.sendMessage(msg.chat.id, "❌ **Format Error:** Use structural configuration: `/addcharacter @username tanjiro`", { parse_mode: "Markdown" });
+      return bot.sendMessage(msg.chat.id, "❌ **Format Error:** Use structure: \`/addcharacter @username tanjiro\`", { parse_mode: "Markdown" });
     }
 
     const [userTarget, cardKeyInput] = parts;
     const cardId = cardKeyInput.toLowerCase().replace(/\s+/g, "_");
 
-    // Resolve Target User ID
     let targetUserId = resolveUserByTag(userTarget);
     if (!targetUserId && !isNaN(userTarget.replace("@", ""))) {
       targetUserId = userTarget.replace("@", "");
     }
 
     if (!targetUserId) {
-      return bot.sendMessage(msg.chat.id, `❌ **User Not Found:** \`${userTarget}\` ka data register nahi mila.`, { parse_mode: "Markdown" });
+      return bot.sendMessage(msg.chat.id, `❌ **User Not Found:** \`${userTarget}\` registration context missing.`, { parse_mode: "Markdown" });
     }
 
-    // Check if card exists in either DB
     const hasNormal = normalCards[cardId] ? true : false;
     const hasMythic = mythicCards[cardId] ? true : false;
 
     if (!hasNormal && !hasMythic) {
-      return bot.sendMessage(msg.chat.id, `❌ **Database Error:** \`${cardId}\` naam ka koi character assets me nahi mila!`, { parse_mode: "Markdown" });
+      return bot.sendMessage(msg.chat.id, `❌ **Database Error:** \`${cardId}\` not found inside assets.`, { parse_mode: "Markdown" });
     }
 
     const buttons = [];
@@ -159,13 +168,10 @@ module.exports = (bot) => {
       const cardImage = cardData.img || cardData.image || cardData.url;
       const cardType = cardData.type || rarity.toUpperCase();
 
-      // Push exactly to user's database string template profile
       p.inventory.push(`${uniqueCharId}|${cardName}|${cardImage}|${cardType}`);
       saveAll();
 
       bot.answerCallbackQuery(query.id, { text: "Card Transferred!" });
-      
-      // Delete button menu to avoid double-clicking
       bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
 
       const successCaption = `🎉 **The trade is completed successfully!**\n\n` +
@@ -183,63 +189,73 @@ module.exports = (bot) => {
   });
 
   // ==========================================
-  // 🪙 REST OF COIN & UTILITY COMMANDS (SAME)
+  // 🪙 COINS MODIFICATION COMMANDS
   // ==========================================
   bot.onText(/\/addcoins (\d+) (\d+)/, (msg, match) => {
     if (!isOwner(msg)) return;
     const p = getPlayer(match[1]);
     p.coins += parseInt(match[2], 10);
     saveAll();
-    bot.sendMessage(msg.chat.id, `✅ Added ${parseInt(match[2], 10).toLocaleString()} Coins`);
+    bot.sendMessage(msg.chat.id, `✅ Added ${parseInt(match[2], 10).toLocaleString()} Coins. New Balance: ${p.coins.toLocaleString()}`);
   });
 
- bot.onText(/\/resetcoins/, async (msg) => {
-    // Sirf admin hi chala paye (Tumhari ID)
-    if (msg.from.id.toString() !== "2086993762") return; 
+  bot.onText(/\/removecoins (\d+) (\d+)/, (msg, match) => {
+    if (!isOwner(msg)) return;
+    const p = getPlayer(match[1]);
+    p.coins = Math.max(0, p.coins - parseInt(match[2], 10));
+    saveAll();
+    bot.sendMessage(msg.chat.id, `🔻 Removed ${parseInt(match[2], 10).toLocaleString()} Coins. New Balance: ${p.coins.toLocaleString()}`);
+  });
 
-    const path = require("path");
-    const fs = require("fs");
-    const playerFile = path.join(__dirname, "../data/players.json");
+  bot.onText(/\/resetcoins/, async (msg) => {
+    if (!isOwner(msg)) return; 
+    const p = getPlayer(OWNER_ID);
+    p.coins = 0; 
+    saveAll();
+    await bot.sendMessage(msg.chat.id, "✅ Aapke coins safely 0 kar diye gaye hain. Baki players ka data bilkul safe hai!");
+  }); 
 
-    try {
-        if (fs.existsSync(playerFile)) {
-            // 1. Pura database read karo (Sare players ka data memory mein aayega)
-            let players = JSON.parse(fs.readFileSync(playerFile, "utf8"));
-            const userId = "2086993762"; // Tumhari ID
+  // ==========================================
+  // 💎 CRYSTALS MODIFICATION COMMANDS
+  // ==========================================
+  bot.onText(/\/addcrystals (\d+) (\d+)/, (msg, match) => {
+    if (!isOwner(msg)) return;
+    const p = getPlayer(match[1]);
+    p.crystals = Number(p.crystals || 0) + parseInt(match[2], 10);
+    saveAll();
+    bot.sendMessage(msg.chat.id, `💎 **Added:** \`+${parseInt(match[2], 10).toLocaleString()} Crystals\`\n📊 **Balance:** \`${p.crystals.toLocaleString()} Crystals\``, { parse_mode: "Markdown" });
+  });
 
-            if (players[userId]) {
-                // 2. Sirf TUMHARE coins 0 kiye, baki players ka kuch touch nahi hua
-                players[userId].coins = 0; 
-                
-                // 3. Wapas file mein hard-save kar diya
-                fs.writeFileSync(playerFile, JSON.stringify(players, null, 2), "utf8");
-                
-                await bot.sendMessage(msg.chat.id, "✅ Aapke coins safely 0 kar diye gaye hain. Baki players ka data bilkul safe hai!");
-            } else {
-                await bot.sendMessage(msg.chat.id, "❌ Player data nahi mila.");
-            }
-        }
-    } catch (err) {
-        console.error("Error resetting coins:", err);
-    }
-}); 
+  bot.onText(/\/removecrystals (\d+) (\d+)/, (msg, match) => {
+    if (!isOwner(msg)) return;
+    const p = getPlayer(match[1]);
+    p.crystals = Math.max(0, Number(p.crystals || 0) - parseInt(match[2], 10));
+    saveAll();
+    bot.sendMessage(msg.chat.id, `🛡 **Removed:** \`-${parseInt(match[2], 10).toLocaleString()} Crystals\`\n📊 **Balance:** \`${p.crystals.toLocaleString()} Crystals\``, { parse_mode: "Markdown" });
+  });
 
+  // ==========================================
+  // ✨ MYTHICAL TOKENS MODIFICATION COMMANDS
+  // ==========================================
   bot.onText(/\/addtokens (\d+) (\d+)/, (msg, match) => {
     if (!isOwner(msg)) return;
     const p = getPlayer(match[1]);
-    p.mythicalCrystals += parseInt(match[2], 10);
+    p.mythic = Number(p.mythic || 0) + parseInt(match[2], 10);
     saveAll();
-    bot.sendMessage(msg.chat.id, "✅ Tokens added");
+    bot.sendMessage(msg.chat.id, `✨ **Added:** \`+${parseInt(match[2], 10).toLocaleString()} Mythical Tokens\`\n📊 **Balance:** \`${p.mythic.toLocaleString()} Mythic Tokens\``, { parse_mode: "Markdown" });
   });
 
   bot.onText(/\/removetokens (\d+) (\d+)/, (msg, match) => {
     if (!isOwner(msg)) return;
     const p = getPlayer(match[1]);
-    p.mythicalCrystals = Math.max(0, (p.mythicalCrystals || 0) - parseInt(match[2], 10));
+    p.mythic = Math.max(0, Number(p.mythic || 0) - parseInt(match[2], 10));
     saveAll();
-    bot.sendMessage(msg.chat.id, "✅ Tokens removed");
+    bot.sendMessage(msg.chat.id, `🛡 **Removed:** \`-${parseInt(match[2], 10).toLocaleString()} Mythical Tokens\`\n📊 **Balance:** \`${p.mythic.toLocaleString()} Mythic Tokens\``, { parse_mode: "Markdown" });
   });
 
+  // ==========================================
+  // 📦 INVENTORY & UTILITIES
+  // ==========================================
   bot.onText(/\/removecharacter (\d+) (.+)/, (msg, match) => {
     if (!isOwner(msg)) return;
     const p = getPlayer(match[1]);
@@ -252,16 +268,16 @@ module.exports = (bot) => {
   bot.onText(/\/checkplayer (\d+)/, (msg, match) => {
     if (!isOwner(msg)) return;
     const targetId = match[1];
-    if (!players[targetId]) return bot.sendMessage(msg.chat.id, "❌ User not found.");
+    if (!players[targetId]) return bot.sendMessage(msg.chat.id, "❌ User database snapshot missing.");
     const p = players[targetId];
-    bot.sendMessage(msg.chat.id, `👤 **Player Specs [${targetId}]:**\n\n🪙 Coins: ${p.coins}\n💎 Crystals: ${p.mythicalCrystals}\n📦 Inventory Size: ${p.inventory.length}`);
+    bot.sendMessage(msg.chat.id, `👤 **Player Specs [${targetId}]:**\n\n🪙 Coins: ${Number(p.coins || 0).toLocaleString()}\n💎 Crystals: ${Number(p.crystals || 0).toLocaleString()}\n✨ Mythic Tokens: ${Number(p.mythic || 0).toLocaleString()}\n📦 Inventory Size: ${p.inventory.length} items`);
   });
 
   bot.onText(/\/resetplayer (\d+)/, (msg, match) => {
     if (!isOwner(msg)) return;
     delete players[match[1]];
     saveAll();
-    bot.sendMessage(msg.chat.id, "🔄 Player reset done");
+    bot.sendMessage(msg.chat.id, "🔄 Player structural wipe complete.");
   });
 
   bot.onText(/\/deleteguild (.+)/, (msg, match) => {
@@ -281,7 +297,7 @@ module.exports = (bot) => {
       saveAll();
       bot.sendMessage(msg.chat.id, "🏰 Guild deleted via name.");
     } else {
-      bot.sendMessage(msg.chat.id, "❌ Guild not found.");
+      bot.sendMessage(msg.chat.id, "❌ Guild entry target not tracked.");
     }
   });
 };
