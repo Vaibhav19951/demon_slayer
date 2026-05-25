@@ -1,55 +1,64 @@
 const premium = (bot) => {
-    const ADMIN_ID = '2086993762'; // Your Owner ID
+    const ADMIN_ID = '2086993762'; 
 
-    // 1. Premium Shop Menu
+    // 1. Initial Menu: Only 2 main buttons
     bot.onText(/\/premium/, (msg) => {
         const chatId = msg.chat.id;
-        const premiumMenu = `
-💎 **GOD SLAYER PREMIUM STORE** 💎
-━━━━━━━━━━━━━━━━━━━━━
-✨ **ESSENCE & BLESSINGS**
-• 🔸 Tanjiro's Essence: 500 Coins
-• 💧 Water Breathing Blessing: 1200 Coins
-• 🔥 Sun Breathing Blessing: 2500 Coins
-
-👑 **GOD-TIER LEGENDARY CARDS**
-━━━━━━━━━━━━━━━━━━━━━
-⚔️ **Yoriichi Tsugikuni**
-Power: 20000 | Price: ₹499
-
-👹 **Muzan Kibutsuji**
-Power: 15500 | Price: ₹399
-
-🌙 **Kokushibo**
-Power: 12000 | Price: ₹199`;
-
         const opts = {
-            parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: '✨ Essence & Blessings', callback_data: 'shop_essence' }],
                     [
-                        { text: '⚔️ Buy Yoriichi', callback_data: 'buy_yoriichi' },
-                        { text: '👹 Buy Muzan', callback_data: 'buy_muzan' }
-                    ],
-                    [{ text: '🌙 Buy Kokushibo', callback_data: 'buy_kokushibo' }]
+                        { text: '✨ Essence & Blessings', callback_data: 'shop_essence' },
+                        { text: '👑 God-Tier Cards', callback_data: 'view_godtier' }
+                    ]
                 ]
             }
         };
-        bot.sendMessage(chatId, premiumMenu, opts);
+        bot.sendMessage(chatId, "💎 **GOD SLAYER PREMIUM STORE** 💎\n\nChoose a category to proceed:", { parse_mode: 'Markdown', ...opts });
     });
 
-    // 2. Button Logic
+    // 2. Handle Category Selection
     bot.on('callback_query', async (query) => {
         const chatId = query.message.chat.id;
         const data = query.data;
 
-        // Show QR when user selects a character
+        // Step 2: Show God-Tier Details + Buy Buttons
+        if (data === 'view_godtier') {
+            const godTierMenu = `
+👑 **GOD-TIER LEGENDARY CARDS** 👑
+━━━━━━━━━━━━━━━━━━━━━
+⚔️ **Yoriichi Tsugikuni**
+Power: 5000 | Price: ₹499
+
+👹 **Muzan Kibutsuji**
+Power: 4500 | Price: ₹399
+
+🌙 **Kokushibo**
+Power: 4000 | Price: ₹199`;
+
+            await bot.sendMessage(chatId, godTierMenu, {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            { text: '⚔️ Buy Yoriichi', callback_data: 'buy_yoriichi' },
+                            { text: '👹 Buy Muzan', callback_data: 'buy_muzan' },
+                            { text: '🌙 Buy Kokushibo', callback_data: 'buy_kokushibo' }
+                        ]
+                    ]
+                }
+            });
+            bot.answerCallbackQuery(query.id);
+        }
+
+        // Step 3: Show QR Code when a character is selected
         if (data.startsWith('buy_')) {
             const charName = data.split('_')[1];
-            await bot.sendMessage(chatId, `You selected ${charName.toUpperCase()}. Scan the QR code below to pay.`);
+            await bot.sendMessage(chatId, `You selected ${charName.toUpperCase()}.`);
+            
+            // Send QR Code
             await bot.sendPhoto(chatId, 'https://image-link.edgeone.app/1779687803104-dh71y4.jpg', {
-                caption: "Payment ke baad screenshot aur UTR number yahan bhejein."
+                caption: "📸 **Scan this QR to pay.**\nAfter payment, send the screenshot and UTR number here."
             });
             bot.answerCallbackQuery(query.id);
         }
@@ -57,20 +66,19 @@ Power: 12000 | Price: ₹199`;
         // Admin Approval Logic
         if (data.startsWith('approve_')) {
             const userId = data.split('_')[1];
-            // ADD YOUR DATABASE UPDATE LOGIC HERE (e.g., db.collection('users').updateOne(...))
-            bot.sendMessage(userId, "🎉 Congratulations! Your payment is approved. The card has been added to your profile.");
+            bot.sendMessage(userId, "🎉 Congratulations! Your payment is approved and the card is added to your profile.");
             bot.sendMessage(chatId, "✅ User Approved.");
             bot.answerCallbackQuery(query.id);
         }
     });
 
-    // 3. Receive Payment Proof (SS)
+    // 3. Receive Payment Proof
     bot.on('photo', (msg) => {
         const chatId = msg.chat.id;
         const photoId = msg.photo[msg.photo.length - 1].file_id;
 
         bot.sendPhoto(ADMIN_ID, photoId, {
-            caption: `🚨 New payment proof from User: ${chatId}`,
+            caption: `🚨 *New Payment Request*\nUser ID: ${chatId}`,
             reply_markup: {
                 inline_keyboard: [[
                     { text: '✅ Approve', callback_data: `approve_${chatId}` },
