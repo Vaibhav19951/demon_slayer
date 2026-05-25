@@ -135,36 +135,57 @@ module.exports = (bot) => {
         });
       }
 
-      // 3. DISPATCH SECURE LOCAL QR FILE STREAM WITH USER SESSION LOCK
-      if (data.startsWith('prem_buy_')) {
-        bot.answerCallbackQuery(query.id);
-        const selectedAssetKey = data.replace('prem_buy_', '');
-        
-        const itemObj = premiumPriceChart[selectedAssetKey];
-        if (!itemObj) return;
+    // ==========================================
+  // 📸 3. RECEIPT SCREENSHOT INTERCEPTOR (FIXED FOR TESTING)
+  // ==========================================
+  bot.on('photo', async (msg) => {
+    const chatId = msg.chat.id;
+    const senderId = msg.from.id.toString();
+    
+    // ✅ TESTING FIX: Alag se check karenge ki kya admin khud purchase test kar raha hai
+    // Agar active session nahi hai, tabhi return karega.
+    if (!pendingPaymentSessions[senderId]) return;
 
-        // Open user state lock session
-        pendingPaymentSessions[clickerId] = selectedAssetKey;
+    const lockedAssetKey = pendingPaymentSessions[senderId];
+    const itemObj = premiumPriceChart[lockedAssetKey];
+    
+    const photoId = msg.photo[msg.photo.length - 1].file_id;
+    const userTag = msg.from.username ? `@${msg.from.username}` : `Client Node: ${msg.from.first_name}`;
 
-        await bot.sendMessage(chatId, `🔥 *Selection Locked:* \`${itemObj.name.toUpperCase()}\`\nFetching secure local terminal QR frame ledger...`, { parse_mode: 'Markdown' });
-        
-        // Safety validation to prevent crashes if file mapping gets unlinked
-        if (!fs.existsSync(LOCAL_QR_PATH)) {
-            console.error(`❌ QR Error: Local photo file not found at path: ${LOCAL_QR_PATH}`);
-            return bot.sendMessage(chatId, "❌ **Gateway Offline:** Central terminal QR matrix asset file missing inside 'asset/' directory.");
+    try {
+      // Admin cockpit console ko notification forward karna
+      await bot.sendPhoto(ADMIN_ID, photoId, {
+        caption: `🚨 **VELIX OS | INCOMING PREMIUM VERIFICATION**\n` +
+                 `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                 `👤 **Origin Account:** ${userTag}\n` +
+                 `🆔 **User ID:** \`${senderId}\`\n` +
+                 `📦 **Demanded Asset:** \`${itemObj ? itemObj.name : "Unknown Item"}\`\n` +
+                 `💳 **Paid Value:** \`${itemObj ? itemObj.price : "FREE"}\`\n\n` +
+                 `*Verify validation signatures through merchant banks carefully before updating active ledger arrays:*`,
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '✅ Approve Asset Drop', callback_data: `prem_approve_${senderId}_${lockedAssetKey}` },
+              { text: '❌ Reject Transaction', callback_data: `prem_reject_${senderId}` }
+            ]
+          ]
         }
+      });
 
-        return bot.sendPhoto(chatId, fs.createReadStream(LOCAL_QR_PATH), {
-          caption: `📸 **VELIX OS SECURE CORES | PAYMENT CHANNEL**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                   `📦 **Purchase Item:** \`${itemObj.name}\`\n` +
-                   `💳 **Total Amount Due:** \`${itemObj.price}\`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                   `1. Scan this verified system host ledger QR code to route funds.\n` +
-                   `2. Once routed, send the **clear receipt screenshot** directly into this chat loop.\n\n` +
-                   `⚠️ *Security Guardrail: Session active until snapshot transmission received.*`,
-          parse_mode: 'Markdown'
-        });
-      }
+      // User ka active session clear karna
+      delete pendingPaymentSessions[senderId];
 
+      await bot.sendMessage(chatId, 
+        `✅ **VELIX OS SYSTEM NOTICE:**\n` +
+        `Your verification receipt screenshot packet has been securely dispatched to the master cockpit console DM ledger. Please stand-by while operations complete processing.`, 
+        { parse_mode: 'Markdown' }
+      );
+
+    } catch (err) {
+      console.error("❌ Critical Owner Cockpit DM Forwarding failure:", err.message);
+    }
+  });
       // 4. ADMIN APPROVAL CORES (HANDLES CARDS, ESSENCE & BLESSING INJECTIONS)
       if (data.startsWith('prem_approve_')) {
         if (clickerId !== ADMIN_ID) return bot.answerCallbackQuery(query.id, { text: "Access Denied: Operator level mismatch.", show_alert: true });
