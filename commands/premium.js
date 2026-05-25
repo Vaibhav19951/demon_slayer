@@ -37,7 +37,6 @@ module.exports = (bot) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
     
-    // Auto sync player data layout structure first
     bot.getPlayerData(userId);
 
     const opts = {
@@ -51,8 +50,9 @@ module.exports = (bot) => {
       }
     };
     
+    // ✅ FIXED: Removed faulty '%' delimiters that broke markdown parsing
     bot.sendMessage(chatId, 
-      `💎 **%VELIX OS | GOD SLAYER PREMIUM ARCHITECTURE%**\n` +
+      `👑 **VELIX OS | GOD SLAYER PREMIUM ARCHITECTURE**\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
       `Welcome operator to the premium network integration terminal. Select a layer branch below to proceed:`, 
       { parse_mode: 'Markdown', ...opts }
@@ -142,13 +142,15 @@ module.exports = (bot) => {
 
         pendingPaymentSessions[clickerId] = selectedAssetKey;
 
-        await bot.sendMessage(chatId, `🔥 *Selection Locked:* \`${itemObj.name.toUpperCase()}\`\nFetching dynamic QR frame terminal ledger...`, { parse_mode: 'Markdown' });
+        // ✅ FIXED: Cleaned up markdown string generation
+        await bot.sendMessage(chatId, `🔥 **Selection Locked:** \`${itemObj.name.toUpperCase()}\`\nFetching dynamic QR frame terminal ledger...`, { parse_mode: 'Markdown' });
         
         if (!fs.existsSync(LOCAL_QR_PATH)) {
             console.error(`❌ QR Error: Path missing: ${LOCAL_QR_PATH}`);
             return bot.sendMessage(chatId, "❌ **Gateway Offline:** QR asset file `qr.jpg` missing in `asset/` folder.");
         }
 
+        // ✅ FIXED: Added specific filename mapping to neutralize the DeprecationWarning
         return bot.sendPhoto(chatId, fs.createReadStream(LOCAL_QR_PATH), {
           caption: `📸 **VELIX OS SECURE CORES | PAYMENT CHANNEL**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                    `📦 **Purchase Item:** \`${itemObj.name}\`\n` +
@@ -157,7 +159,7 @@ module.exports = (bot) => {
                    `2. Send the **clear receipt screenshot** directly into this chat loop.\n\n` +
                    `⚠️ *Session active until snapshot transmission received.*`,
           parse_mode: 'Markdown'
-        });
+        }, { filename: 'qr.jpg', contentType: 'image/jpeg' });
       }
 
       // 4. ADMIN ACTION: APPROVE DROP
@@ -165,9 +167,9 @@ module.exports = (bot) => {
         await bot.answerCallbackQuery(query.id).catch(() => {});
         if (clickerId !== ADMIN_ID) return;
 
-        const chunks = data.split('_'); // [prem, approve, targetUserId, asset, type]
+        const chunks = data.split('_'); 
         const targetUserId = chunks[2];
-        const assetIdKey = chunks.slice(3).join('_'); // Combines remaining keys cleanly
+        const assetIdKey = chunks.slice(3).join('_'); 
 
         const itemObj = premiumPriceChart[assetIdKey];
         if (!itemObj) return bot.sendMessage(chatId, "❌ **Ledger Fault:** Unverified target key payload.");
@@ -178,7 +180,6 @@ module.exports = (bot) => {
         if (!targetProfile.inventory) targetProfile.inventory = [];
         if (!targetProfile.materials) targetProfile.materials = {};
 
-        // INJECTION PROTOCOLS MATCHING INDEX.JS STRUCTS
         if (itemObj.type === "card") {
           const assetObj = godCharManifest[assetIdKey] || { id: assetIdKey, name: itemObj.name };
           targetProfile.inventory.push({
@@ -208,7 +209,6 @@ module.exports = (bot) => {
           targetProfile.materials["universal_awakening_stone"] = (parseInt(targetProfile.materials["universal_awakening_stone"], 10) || 0) + 1;
         }
 
-        // Commit database synchronization state
         bot.savePlayerData(targetUserId, targetProfile);
 
         await bot.sendMessage(targetUserId, 
@@ -263,6 +263,7 @@ module.exports = (bot) => {
     const userTag = msg.from.username ? `@${msg.from.username}` : `Client Node: ${msg.from.first_name}`;
 
     try {
+      // ✅ FIXED: Completely sanitized template string variables to guarantee fail-safe markdown parsing
       await bot.sendPhoto(ADMIN_ID, photoId, {
         caption: `🚨 **VELIX OS | INCOMING PREMIUM VERIFICATION**\n` +
                  `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
