@@ -1,6 +1,6 @@
 /**
- * VELIX OS V2.7 | PREMIUM PAYMENT GATEWAY
- * QR + Live Timer + Manual Approval System
+ * VELIX OS V2.8 | PREMIUM PAYMENT SYSTEM
+ * QR + TIMER + SKIP TIMER + APPROVE/DENY
  */
 
 const fs = require('fs');
@@ -9,11 +9,16 @@ const path = require('path');
 const godTierRegistry = require("../asset/godchar");
 const godCharManifest = godTierRegistry.godTierManifest || {};
 
-console.log("💎 PREMIUM SYSTEM LOADED: premium.js");
+console.log("💎 PREMIUM SYSTEM LOADED");
 
 module.exports = (bot) => {
 
   const ADMIN_ID = '2086993762';
+
+  // ==========================================
+  // ⏳ ACTIVE TIMERS
+  // ==========================================
+  const activeTimers = {};
 
   // ==========================================
   // 💳 PRICE DATABASE
@@ -81,11 +86,12 @@ module.exports = (bot) => {
     bot.getPlayerData(userId);
 
     await bot.sendMessage(
+
       chatId,
 
       `👑 *VELIX PREMIUM NETWORK*\n` +
       `━━━━━━━━━━━━━━━━━━━\n\n` +
-      `Select a premium category below.`,
+      `Choose a category below.`,
 
       {
         parse_mode: 'Markdown',
@@ -105,6 +111,7 @@ module.exports = (bot) => {
           ]
         }
       }
+
     );
 
   });
@@ -119,12 +126,16 @@ module.exports = (bot) => {
     const data = query.data;
     const messageId = query.message.message_id;
 
-    if (!data.startsWith('prem')) return;
+    if (
+      !data.startsWith('prem_') &&
+      !data.startsWith('prempaid_') &&
+      !data.startsWith('skip_')
+    ) return;
 
     try {
 
       // ==========================================
-      // 👑 VIEW CARDS
+      // 👑 VIEW GOD CARDS
       // ==========================================
       if (data === 'prem_view_godtier') {
 
@@ -140,22 +151,20 @@ module.exports = (bot) => {
 
           if (!char) return;
 
+          if (
+            char.id === "godTierArray" ||
+            char.id === "godTierManifest"
+          ) return;
+
           const price =
             premiumPriceChart[key]
               ? premiumPriceChart[key].price
               : "₹499";
 
-          if (
-            char.id !== "godTierArray" &&
-            char.id !== "godTierManifest"
-          ) {
-
-            text +=
-              `⚡ *${char.name}*\n` +
-              `💥 Power: \`${char.power || char.atk || 4000}\`\n` +
-              `💳 Price: \`${price}\`\n\n`;
-
-          }
+          text +=
+            `⚡ *${char.name}*\n` +
+            `💥 Power: \`${char.power || char.atk || 4000}\`\n` +
+            `💳 Price: \`${price}\`\n\n`;
 
         });
 
@@ -198,6 +207,7 @@ module.exports = (bot) => {
         await bot.answerCallbackQuery(query.id);
 
         return bot.sendMessage(
+
           chatId,
 
           `✨ *MATERIAL SHOP*\n` +
@@ -236,6 +246,7 @@ module.exports = (bot) => {
               ]
             }
           }
+
         );
 
       }
@@ -265,9 +276,10 @@ module.exports = (bot) => {
         }
 
         // ==========================================
-        // 📸 SEND QR
+        // 📸 QR
         // ==========================================
         await bot.sendPhoto(
+
           chatId,
           fs.createReadStream(LOCAL_QR_PATH),
 
@@ -284,66 +296,100 @@ module.exports = (bot) => {
 
               `1. Scan QR\n` +
               `2. Complete Payment\n` +
-              `3. Wait For Timer\n\n` +
+              `3. Wait for timer\n\n` +
 
-              `⚠️ Purchase remains pending until owner approval.`,
+              `⚠️ Purchase remains pending until approval.`,
 
             parse_mode: 'Markdown'
-          },
+          }
+
+        );
+
+        // ==========================================
+        // ⏳ TIMER MESSAGE
+        // ==========================================
+        let timeLeft = 120;
+
+        const timerMsg = await bot.sendMessage(
+
+          chatId,
+
+          `⏳ Payment Timer: 02:00`,
 
           {
-            filename: 'qr.jpg',
-            contentType: 'image/jpeg'
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: '⏩ Skip Timer',
+                    callback_data:
+                      `skip_${selectedAssetKey}`
+                  }
+                ]
+              ]
+            }
           }
+
         );
 
         // ==========================================
         // ⏳ LIVE TIMER
         // ==========================================
-        let timeLeft = 120;
-
-        const timerMsg = await bot.sendMessage(
-          chatId,
-          `⏳ Payment Timer: 02:00`
-        );
-
-        const countdown = setInterval(async () => {
+        activeTimers[chatId] = setInterval(async () => {
 
           timeLeft--;
 
-          const minutes = Math.floor(timeLeft / 60)
-            .toString()
-            .padStart(2, '0');
+          const minutes =
+            Math.floor(timeLeft / 60)
+              .toString()
+              .padStart(2, '0');
 
-          const seconds = (timeLeft % 60)
-            .toString()
-            .padStart(2, '0');
+          const seconds =
+            (timeLeft % 60)
+              .toString()
+              .padStart(2, '0');
 
           try {
 
             await bot.editMessageText(
+
               `⏳ Payment Timer: ${minutes}:${seconds}`,
+
               {
                 chat_id: chatId,
-                message_id: timerMsg.message_id
+                message_id: timerMsg.message_id,
+
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      {
+                        text: '⏩ Skip Timer',
+                        callback_data:
+                          `skip_${selectedAssetKey}`
+                      }
+                    ]
+                  ]
+                }
               }
+
             );
 
           } catch {}
 
           // ==========================================
-          // ✅ TIMER END
+          // ⏳ TIMER END
           // ==========================================
           if (timeLeft <= 0) {
 
-            clearInterval(countdown);
+            clearInterval(activeTimers[chatId]);
 
             await bot.sendMessage(
+
               chatId,
 
               `✅ *Payment Window Finished*\n\n` +
-              `If payment has been completed,\n` +
-              `click below to notify the owner.`,
+              `If payment completed,\n` +
+              `click below.`,
 
               {
                 parse_mode: 'Markdown',
@@ -360,6 +406,7 @@ module.exports = (bot) => {
                   ]
                 }
               }
+
             );
 
           }
@@ -369,9 +416,48 @@ module.exports = (bot) => {
       }
 
       // ==========================================
-      // 🚨 USER PRESSED I HAVE PAID
+      // ⏩ SKIP TIMER
+      // ==========================================
+      if (data.startsWith('skip_')) {
+
+        await bot.answerCallbackQuery(query.id);
+
+        const assetKey =
+          data.replace('skip_', '');
+
+        clearInterval(activeTimers[chatId]);
+
+        return bot.sendMessage(
+
+          chatId,
+
+          `✅ Timer skipped.\n\n` +
+          `Click below if payment completed.`,
+
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: '✅ I Have Paid',
+                    callback_data:
+                      `prempaid_${assetKey}`
+                  }
+                ]
+              ]
+            }
+          }
+
+        );
+
+      }
+
+      // ==========================================
+      // 🚨 USER PAID
       // ==========================================
       if (data.startsWith('prempaid_')) {
+
+        console.log("✅ PAYMENT BUTTON CLICKED");
 
         await bot.answerCallbackQuery(
           query.id,
@@ -393,8 +479,10 @@ module.exports = (bot) => {
             ? `@${query.from.username}`
             : query.from.first_name;
 
+        console.log("📨 SENDING TO OWNER");
+
         // ==========================================
-        // 🚨 SEND TO OWNER
+        // 🚨 OWNER REQUEST
         // ==========================================
         await bot.sendMessage(
 
@@ -407,9 +495,7 @@ module.exports = (bot) => {
           `🆔 User ID: \`${clickerId}\`\n\n` +
 
           `📦 Item: *${itemObj.name}*\n` +
-          `💳 Amount: *${itemObj.price}*\n\n` +
-
-          `Approve or decline below.`,
+          `💳 Amount: *${itemObj.price}*`,
 
           {
             parse_mode: 'Markdown',
@@ -422,7 +508,6 @@ module.exports = (bot) => {
                     callback_data:
                       `prem_approve_${clickerId}_${assetKey}`
                   },
-
                   {
                     text: '❌ Decline',
                     callback_data:
@@ -435,16 +520,12 @@ module.exports = (bot) => {
 
         );
 
-        // ==========================================
-        // ✅ USER MESSAGE
-        // ==========================================
         return bot.sendMessage(
 
           chatId,
 
           `✅ *Payment Notification Sent*\n\n` +
-          `The owner has been notified.\n` +
-          `Please wait for approval.`,
+          `Owner has been notified.`,
 
           {
             parse_mode: 'Markdown'
@@ -455,7 +536,7 @@ module.exports = (bot) => {
       }
 
       // ==========================================
-      // ✅ APPROVE PAYMENT
+      // ✅ APPROVE
       // ==========================================
       if (data.startsWith('prem_approve_')) {
 
@@ -592,12 +673,8 @@ module.exports = (bot) => {
 
           targetUserId,
 
-          `🎉 *PAYMENT APPROVED*\n` +
-          `━━━━━━━━━━━━━━━━━━━\n\n` +
-
-          `Your purchase has been approved.\n\n` +
-
-          `📦 Reward Delivered:\n` +
+          `🎉 *PAYMENT APPROVED*\n\n` +
+          `📦 Delivered:\n` +
           `*${itemObj.name}*`,
 
           {
@@ -607,7 +684,7 @@ module.exports = (bot) => {
         ).catch(() => {});
 
         // ==========================================
-        // ✅ OWNER PANEL UPDATE
+        // ✅ UPDATE OWNER MSG
         // ==========================================
         return bot.editMessageText(
 
@@ -626,7 +703,7 @@ module.exports = (bot) => {
       }
 
       // ==========================================
-      // ❌ REJECT PAYMENT
+      // ❌ DECLINE
       // ==========================================
       if (data.startsWith('prem_reject_')) {
 
@@ -641,8 +718,7 @@ module.exports = (bot) => {
 
           targetUserId,
 
-          `❌ *PAYMENT DECLINED*\n\n` +
-          `Your payment request was declined.`,
+          `❌ *PAYMENT DECLINED*`,
 
           {
             parse_mode: 'Markdown'
