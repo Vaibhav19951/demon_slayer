@@ -1,3 +1,8 @@
+/**
+ * VELIX OS V2.5 | CENTRAL ARCHETYPE CHARACTER REGISTRY
+ * Properly Mapped for Dynamic Array Searching & Object Validation Sequences
+ */
+
 const START_IMG =
   "https://i.pinimg.com/736x/e1/97/3e/e1973e8421e69bc09f731b60f5102d97.jpg";
 
@@ -7,7 +12,7 @@ const HARU_IMG =
 const SORA_IMG =
   "https://pic-link-bot.lovable.app/i/telegram-1779346551992-24806470.jpg";
 
-const characters = [
+const characterArray = [
   // 🌊 Water Hashira
   {
     id: "giyu",
@@ -22,7 +27,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 300,
-    attack: 43,
+    atk: 43, // Aligned property name structure to sync across execution loops
     defense: 26,
     speed: 41,
     rarity: "SSR",
@@ -46,7 +51,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 320,
-    attack: 45,
+    atk: 45,
     defense: 28,
     speed: 38,
     rarity: "SSR",
@@ -70,7 +75,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 310,
-    attack: 44,
+    atk: 44,
     defense: 27,
     speed: 42,
     rarity: "SSR",
@@ -94,7 +99,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 290,
-    attack: 40,
+    atk: 40,
     defense: 24,
     speed: 43,
     rarity: "SSR",
@@ -118,7 +123,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 280,
-    attack: 39,
+    atk: 39,
     defense: 23,
     speed: 40,
     rarity: "SSR",
@@ -142,7 +147,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 350,
-    attack: 50,
+    atk: 50,
     defense: 35,
     speed: 30,
     rarity: "SSR",
@@ -166,7 +171,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 270,
-    attack: 42,
+    atk: 42,
     defense: 22,
     speed: 45,
     rarity: "SSR",
@@ -190,7 +195,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 250,
-    attack: 38,
+    atk: 38,
     defense: 20,
     speed: 44,
     rarity: "SSR",
@@ -214,7 +219,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 305,
-    attack: 46,
+    atk: 46,
     defense: 25,
     speed: 41,
     rarity: "SSR",
@@ -238,7 +243,7 @@ const characters = [
     ],
     rank: "Tsuguko",
     hp: 180,
-    attack: 32,
+    atk: 32,
     defense: 18,
     speed: 35,
     rarity: "SR",
@@ -262,7 +267,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 315,
-    attack: 42,
+    atk: 42,
     defense: 30,
     speed: 40,
     rarity: "SSR",
@@ -286,7 +291,7 @@ const characters = [
     ],
     rank: "Kinoe",
     hp: 210,
-    attack: 36,
+    atk: 36,
     defense: 19,
     speed: 45,
     rarity: "SR",
@@ -310,7 +315,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 330,
-    attack: 47,
+    atk: 47,
     defense: 27,
     speed: 43,
     rarity: "SSR",
@@ -334,7 +339,7 @@ const characters = [
     ],
     rank: "Tsuguko",
     hp: 170,
-    attack: 29,
+    atk: 29,
     defense: 18,
     speed: 34,
     rarity: "SR",
@@ -358,7 +363,7 @@ const characters = [
     ],
     rank: "Kanoe",
     hp: 190,
-    attack: 33,
+    atk: 33,
     defense: 21,
     speed: 28,
     rarity: "SR",
@@ -382,7 +387,7 @@ const characters = [
     ],
     rank: "Hashira",
     hp: 360,
-    attack: 52,
+    atk: 52,
     defense: 35,
     speed: 38,
     rarity: "UR",
@@ -394,7 +399,7 @@ const characters = [
 
   // 🌌 Witch (Custom - OP character)
   {
-    id: "Shoko",
+    id: "shoko",
     name: "Shoko Nobara",
     anime: "Demon Slayer",
     personality: ["wise", "calm", "kind"],
@@ -406,7 +411,7 @@ const characters = [
     ],
     rank: "GoD",
     hp: 4000,
-    attack: 520,
+    atk: 520,
     defense: 350,
     speed: 380,
     rarity: "SSR",
@@ -429,7 +434,7 @@ const characters = [
     ],
     rank: "Mizunoto",
     hp: 80,
-    attack: 12,
+    atk: 12,
     defense: 8,
     speed: 10,
     rarity: "Common",
@@ -452,7 +457,7 @@ const characters = [
     ],
     rank: "Mizunoto",
     hp: 90,
-    attack: 9,
+    atk: 9,
     defense: 14,
     speed: 11,
     rarity: "Common",
@@ -475,7 +480,7 @@ const characters = [
     ],
     rank: "Mizunoe",
     hp: 110,
-    attack: 16,
+    atk: 16,
     defense: 12,
     speed: 14,
     rarity: "Common",
@@ -498,7 +503,7 @@ const characters = [
     ],
     rank: "Mizunoe",
     hp: 100,
-    attack: 18,
+    atk: 18,
     defense: 11,
     speed: 15,
     rarity: "Common",
@@ -521,7 +526,7 @@ const characters = [
     ],
     rank: "Kanoto",
     hp: 120,
-    attack: 20,
+    atk: 20,
     defense: 13,
     speed: 22,
     rarity: "Uncommon",
@@ -544,7 +549,7 @@ const characters = [
     ],
     rank: "Kanoto",
     hp: 115,
-    attack: 14,
+    atk: 14,
     defense: 16,
     speed: 13,
     rarity: "Uncommon",
@@ -567,7 +572,7 @@ const characters = [
     ],
     rank: "Kanoe",
     hp: 150,
-    attack: 26,
+    atk: 26,
     defense: 18,
     speed: 20,
     rarity: "SR",
@@ -590,7 +595,7 @@ const characters = [
     ],
     rank: "Kanoe",
     hp: 140,
-    attack: 24,
+    atk: 24,
     defense: 17,
     speed: 21,
     rarity: "SR",
@@ -601,8 +606,27 @@ const characters = [
   }
 ];
 
+// Helper block to transform array elements on-the-fly into key map targets
+// This single step makes it backwards compatible with your advanced commands!
+const characters = {};
+characterArray.forEach(char => {
+  characters[char.id] = {
+    name: char.name,
+    type: char.rank,
+    hp: char.hp,
+    atk: char.atk,
+    desc: char.description,
+    img: char.image,
+    rarity: char.rarity,
+    defense: char.defense,
+    speed: char.speed,
+    abilities: char.abilities
+  };
+});
+
 module.exports = {
-  characters,
+  characters, // Exports mapped object dynamically for commands/char.js matching structure!
+  characterRawArray: characterArray, // Secondary export for spin/gacha arrays if needed
   START_IMG,
   HARU_IMG,
   SORA_IMG
