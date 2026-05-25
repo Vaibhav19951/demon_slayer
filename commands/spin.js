@@ -1,23 +1,37 @@
 /**
  * VELIX OS V2.5 | NICHIRIN FORGE GACHA SYSTEM
- * Fully Linked with Centralized Ledger & Inventory Engine
- * Concurrency Safe & Data-Loss Proof (2000+ Active Users)
+ * Fully Integrated with Base Assets, Mythical Limited & God-Tier Registries
+ * Concurrency Safe & Optimized Dynamic Drop Engines
  */
 
-const normalCards = [
-    { name: "Mizunoto Recruit" }, { name: "Mizunoe Slayer" }, 
-    { name: "Kanoto Swordsman" }, { name: "Kanoe Guardian" },
-    { name: "Tsuchinoto Enforcer" }
-];
+// 📦 All Central Asset Registries Linked Natively
+const assetRegistry = require("../asset/assets");
+const mythicalRegistry = require("../asset/mythical");
+const godTierRegistry = require("../asset/godtier"); // Nayi God-Tier registry file ka path
 
-const mythicCards = [
-    { id: "tanjiro_mythic", name: "Kamado Tanjiro (Sun Breathing)" },
-    { id: "nezuko_mythic", name: "Kamado Nezuko (Awakened Form)" },
-    { id: "zenitsu_mythic", name: "Agatsuma Zenitsu (Godspeed)" },
-    { id: "muzan_mythic", name: "Kibutsuji Muzan (Demon King)" }
-];
+// 🛠️ Base pool parsing from central database
+const characterPool = assetRegistry.characterRawArray || Object.keys(assetRegistry.characters).map(key => {
+    return {
+        id: key,
+        name: assetRegistry.characters[key].name,
+        rarity: assetRegistry.characters[key].rarity || "Common",
+        image: assetRegistry.characters[key].img,
+        hp: assetRegistry.characters[key].hp,
+        atk: assetRegistry.characters[key].atk,
+        defense: assetRegistry.characters[key].defense,
+        speed: assetRegistry.characters[key].speed,
+        abilities: assetRegistry.characters[key].abilities
+    };
+});
 
-console.log("🦅 [LOADED SUCCESS] Nichirin Forge Node Linked: spin.js");
+// 🔮 Mythical Limited Pool Injection
+const mythicalPool = mythicalRegistry.mythicalArray || mythicalRegistry.mythical || [];
+
+// 👑 God-Tier Pool Injection
+const godTierPool = godTierRegistry.godTierArray || Object.values(godTierRegistry.godTierManifest || {});
+
+console.log(`🎰 [LOADED SUCCESS] Nichirin Forge Engine Linked: spin.js`);
+console.log(`📦 Base Pool: ${characterPool.length} | ✨ Mythical Pool: ${mythicalPool.length} | 👑 God-Tier Pool: ${godTierPool.length}`);
 
 module.exports = (bot) => {
     
@@ -26,7 +40,6 @@ module.exports = (bot) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
         
-        // Centralized Core Fetch
         const player = bot.getPlayerData(userId);
         if (!player) return;
 
@@ -41,7 +54,7 @@ module.exports = (bot) => {
                     inline_keyboard: [
                         [
                             { text: "🪙 Normal Platform", callback_data: `select_platform:normal:${userId}` },
-                            { text: "✨ Mythic Platform", callback_data: `select_platform:character:${userId}` }
+                            { text: "✨ Mythical Platform", callback_data: `select_platform:character:${userId}` }
                         ],
                         [
                             { text: "💎 Material Platform", callback_data: `select_platform:material:${userId}` }
@@ -94,7 +107,7 @@ module.exports = (bot) => {
             currencyKey = "mythic"; assetSymbol = "✨";
             if (count === 1) cost = 1500;
             else if (count === 5) cost = 7500;
-            else return bot.sendMessage(chatId, "❌ **Mythic Bundles are limited to 1x or 5x spins only!**");
+            else return bot.sendMessage(chatId, "❌ **Mythical Bundles are limited to 1x or 5x spins only!**");
         } 
         else if (mode === "material") {
             currencyKey = "crystals"; assetSymbol = "💎";
@@ -111,17 +124,38 @@ module.exports = (bot) => {
         }
 
         let lootEarned = [];
-        const normalNames = normalCards.map(c => c.name);
+
+        // Sorting base pools
+        const commonPool = characterPool.filter(c => c.rarity === "Common" || c.rarity === "Uncommon");
+        const highPool = characterPool.filter(c => c.rarity === "SR" || c.rarity === "SSR" || c.rarity === "UR");
 
         for (let i = 0; i < rolls; i++) {
             if (mode === "normal") {
-                if (Math.random() < 0.70) {
-                    const randomNorm = normalNames[Math.floor(Math.random() * normalNames.length)];
-                    
-                    // Match standard structural instantiation mapping
-                    player.inventory.push({ name: randomNorm, rarity: "Common", level: 1, exp: 0 });
-                    lootEarned.push(`🃏 Card: ${randomNorm}`);
-                } else {
+                const randRoll = Math.random() * 100;
+
+                // 🪙 Coins platform:
+                // 0.1% Micro-chance for God-Tier drop from coins
+                if (randRoll < 0.1 && godTierPool.length > 0) {
+                    const dropped = godTierPool[Math.floor(Math.random() * godTierPool.length)];
+                    processGachaDrop(player, dropped, "God-Tier", lootEarned);
+                }
+                // 1% Hyper-rare chance to drop Mythical Limited cards
+                else if (randRoll < 1.1 && mythicalPool.length > 0) {
+                    const dropped = mythicalPool[Math.floor(Math.random() * mythicalPool.length)];
+                    processGachaDrop(player, dropped, "Mythical Limited", lootEarned);
+                }
+                // 15% chance to drop SR/SSR/UR base cards
+                else if (randRoll < 16.1 && highPool.length > 0) {
+                    const dropped = highPool[Math.floor(Math.random() * highPool.length)];
+                    processGachaDrop(player, dropped, dropped.rarity, lootEarned);
+                }
+                // 64% chance to drop Common/Uncommon cards
+                else if (randRoll < 80.1 && commonPool.length > 0) {
+                    const dropped = commonPool[Math.floor(Math.random() * commonPool.length)];
+                    processGachaDrop(player, dropped, dropped.rarity, lootEarned);
+                } 
+                // Fallback to bonus raw coins
+                else {
                     const bonusCoins = Math.floor(Math.random() * 80) + 20;
                     player.coins += bonusCoins;
                     lootEarned.push(`🪙 Bonus: +${bonusCoins} Coins`);
@@ -129,51 +163,56 @@ module.exports = (bot) => {
             } 
             else if (mode === "character") {
                 const randChance = Math.random() * 100;
-                let droppedCharName = ""; let droppedCharId = ""; let droppedRarity = "Common";
+                let dropped = null;
 
-                if (randChance < 3.0) { 
-                    const muzan = mythicCards.find(c => c.id.includes("muzan"));
-                    droppedCharName = muzan.name; droppedCharId = muzan.id.split('_')[0]; droppedRarity = "Mythic";
-                    lootEarned.push(`🔥 [MYTHICAL] ${droppedCharName}`);
-                } else if (randChance < 15.0) {
-                    const luckyMythic = mythicCards[Math.floor(Math.random() * mythicCards.length)];
-                    droppedCharName = luckyMythic.name; droppedCharId = luckyMythic.id.split('_')[0]; droppedRarity = "Mythic";
-                    lootEarned.push(`✨ [LIMITED] ${droppedCharName}`);
+                // ✨ Mythical Premium Platform Rates:
+                // 💥 3.5% Super Rare chance to hit a GOD-TIER character!
+                if (randChance < 3.5 && godTierPool.length > 0) {
+                    dropped = godTierPool[Math.floor(Math.random() * godTierPool.length)];
+                    processGachaDrop(player, dropped, "God-Tier", lootEarned);
+                } 
+                // 👑 25% Chance to pull a Mythical Limited card
+                else if (randChance < 28.5 && mythicalPool.length > 0) {
+                    dropped = mythicalPool[Math.floor(Math.random() * mythicalPool.length)];
+                    processGachaDrop(player, dropped, "Mythical Limited", lootEarned);
+                } 
+                // ✨ 35% Chance to pull standard elite tier (SR/SSR/UR)
+                else if (randChance < 63.5 && highPool.length > 0) {
+                    dropped = highPool[Math.floor(Math.random() * highPool.length)];
+                    processGachaDrop(player, dropped, dropped.rarity, lootEarned);
+                } 
+                // Fallback to base cards
+                else if (commonPool.length > 0) {
+                    dropped = commonPool[Math.floor(Math.random() * commonPool.length)];
+                    processGachaDrop(player, dropped, dropped.rarity, lootEarned);
                 } else {
-                    const normalFallback = normalNames[Math.floor(Math.random() * normalNames.length)];
-                    droppedCharName = normalFallback; droppedCharId = normalFallback.toLowerCase().replace(/\s+/g, '');
-                    lootEarned.push(`🃏 Card: ${droppedCharName}`);
-                }
-
-                let hasDuplicate = player.inventory.some(item => (typeof item === "string" ? item : item.name).toLowerCase() === droppedCharName.toLowerCase());
-
-                if (hasDuplicate) {
-                    const essenceKey = `${droppedCharId}_essence`;
-                    player.materials[essenceKey] = (parseInt(player.materials[essenceKey], 10) || 0) + 1;
-                    lootEarned[lootEarned.length - 1] += ` 🔄 (+1 ${essenceKey.toUpperCase()})`;
-                } else {
-                    player.inventory.push({ name: droppedCharName, rarity: droppedRarity, level: 1, exp: 0 });
+                    dropped = characterPool[Math.floor(Math.random() * characterPool.length)];
+                    processGachaDrop(player, dropped, dropped.rarity, lootEarned);
                 }
             } 
             else if (mode === "material") {
+                // 💎 Material platform engine
                 if (Math.random() < 0.15) {
                     player.materials["universal_blessing"] = (parseInt(player.materials["universal_blessing"], 10) || 0) + 1;
                     lootEarned.push("💎 Universal Blessing Ore Piece");
                 } else {
-                    const poolSample = mythicCards.map(c => c.id.split('_')[0]);
-                    const designatedChar = poolSample[Math.floor(Math.random() * poolSample.length)];
-                    const generatedEssence = `${designatedChar}_essence`;
-                    player.materials[generatedEssence] = (parseInt(player.materials[generatedEssence], 10) || 0) + 1;
-                    lootEarned.push(`🧪 Essence: ${generatedEssence.toUpperCase()}`);
+                    // Random dynamic essence matching structure
+                    const dropped = characterPool[Math.floor(Math.random() * characterPool.length)];
+                    let tier = dropped.rarity.toLowerCase().replace(/\s+/g, '_');
+                    let baseCleanName = dropped.name.toLowerCase().replace(/🔥|awakened|limited|\[.*?\]|\(.*?\)/g, '').trim().replace(/\s+/g, '_');
+                    let randomEssenceKey = `${baseCleanName}_${tier}_essence`;
+
+                    player.materials[randomEssenceKey] = (parseInt(player.materials[randomEssenceKey], 10) || 0) + 1;
+                    lootEarned.push(`🧪 Essence Fragment: ${randomEssenceKey.toUpperCase()}`);
                 }
             }
         }
 
-        // Deduct balance and save
+        // Deduct balance and save state safely
         player[currencyKey] -= cost;
         bot.savePlayerData(userId, player);
 
-        const processingMsg = await bot.sendMessage(chatId, `🎰 **VELIX OS FORGE | MODE: ${mode.toUpperCase()}**\n` + `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` + `🔄 Activating Breathing Form Runes...\n` + `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` + `🎟️ \`Deducted:\` ${assetSymbol} ${cost.toLocaleString()}`);
+        const processingMsg = await bot.sendMessage(chatId, `🎰 **VELIX OS FORGE | MODE: ${mode.toUpperCase()}**\n` + `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` + `🔄 Resonating Ancient Sun Breathing Runes...\n` + `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` + `🎟️ \`Deducted:\` ${assetSymbol} ${cost.toLocaleString()}`);
         const reportSummary = lootEarned.map(item => `• ${item}`).join('\n');
 
         await bot.editMessageText(
@@ -187,13 +226,55 @@ module.exports = (bot) => {
         ).catch(() => {});
     }
 
+    // Modularized function to avoid redundant injection and handle duplicate conversions smoothly
+    function processGachaDrop(player, card, rarityName, lootEarned) {
+        let cleanRarity = rarityName.toLowerCase().replace(/\s+/g, '_');
+        let baseCleanName = card.name.toLowerCase().replace(/🔥|awakened|limited|\[.*?\]|\(.*?\)/g, '').trim().replace(/\s+/g, '_');
+        
+        let essenceKey = `${baseCleanName}_${cleanRarity}_essence`;
+        let blessingKey = `${baseCleanName}_${cleanRarity}_blessing`;
+
+        let hasDuplicate = player.inventory.some(item => (typeof item === "string" ? item : item.name).toLowerCase() === card.name.toLowerCase());
+
+        if (hasDuplicate) {
+            player.materials[essenceKey] = (parseInt(player.materials[essenceKey], 10) || 0) + 2;
+            player.materials[blessingKey] = (parseInt(player.materials[blessingKey], 10) || 0) + 1;
+            lootEarned.push(`🔄 Duplicate [${card.name}] Converted ➔ +2 ${rarityName.toUpperCase()} Essence, +1 Blessing`);
+        } else {
+            // Compute starting combat power metrics safely
+            let calcPower = card.power || card.atk || 100;
+
+            player.inventory.push({ 
+                id: card.id,
+                name: card.name, 
+                rarity: rarityName, 
+                level: card.level || 1, 
+                exp: card.xp || 0, 
+                max_xp: card.max_xp || 1000,
+                power: calcPower,
+                atk: card.atk || calcPower,
+                image: card.image || card.img || "",
+                type: card.type || "Physical",
+                isAwakened: card.isAwakened || false,
+                awakeningStage: card.awakeningStage || 0
+            });
+            
+            // Premium Badges assigned inside reports dynamically
+            let badge = "🃏";
+            if (rarityName === "God-Tier") badge = "⚡ [GOD-TIER]";
+            else if (rarityName === "Mythical Limited") badge = "👑 [MYTHICAL LIMITED]";
+            else badge = `🎴 [${rarityName.toUpperCase()}]`;
+
+            lootEarned.push(`${badge} ${card.name}`);
+        }
+    }
+
     // 🎛️ INLINE KEYBOARD CONTROLLER WITH BYPASS PROTECTION
     bot.on("callback_query", async (query) => {
         const chatId = query.message.chat.id;
         const callerId = query.from.id.toString();
         const dataPayload = query.data;
 
-        // Security bypass evaluation
         if (!dataPayload.startsWith("select_platform:") && !dataPayload.startsWith("btn_spin:") && !dataPayload.startsWith("spin_back_main")) {
             return; 
         }
@@ -215,7 +296,7 @@ module.exports = (bot) => {
             if (targetPlatform === "normal") {
                 title = "🪙 NORMAL SPIN BUNDLES"; baseAsset = "Coins"; rate1 = 25; rate5 = 250;
             } else if (targetPlatform === "character") {
-                title = "✨ MYTHIC SPIN BUNDLES"; baseAsset = "Tokens"; rate1 = 1500; rate5 = 7500;
+                title = "✨ MYTHICAL LIMITED SPIN BUNDLES"; baseAsset = "Tokens"; rate1 = 1500; rate5 = 7500;
             } else if (targetPlatform === "material") {
                 title = "💎 MATERIAL SPIN BUNDLES"; baseAsset = "Crystals"; rate1 = 50; rate5 = 250;
             }
@@ -224,7 +305,7 @@ module.exports = (bot) => {
             if (targetPlatform === "character") {
                 keyboardRows.push([
                     { text: `🎰 1x Spin (${rate1} ${baseAsset})`, callback_data: `btn_spin:character:1:${callerId}` },
-                    { text: `🔥 5x Spin (${rate5} ${baseAsset})`, callback_data: `btn_spin:character:5:${callerId}` }
+                    { text: `⚡ 5x Spin (${rate5} ${baseAsset})`, callback_data: `btn_spin:character:5:${callerId}` }
                 ]);
             } else {
                 keyboardRows.push([
@@ -242,7 +323,7 @@ module.exports = (bot) => {
                 `🎰 **${title}**\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Select your desired bundle multiplier depth:\n` +
-                `• *10x multi-spins add +1 Free Roll inside execution loop!*\n` +
+                `• *Mythical Platform features an amplified 25% chance to drop Mythical Units and a hyper-exclusive 3.5% chance to extract supreme GOD-TIER entities!*\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━`, 
                 {
                     chat_id: chatId, message_id: query.message.message_id,
@@ -260,7 +341,6 @@ module.exports = (bot) => {
 
         if (dataPayload.startsWith("spin_back_main")) {
             bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
-            // Redirect seamlessly back into default endpoint
             const fakeMsg = { chat: { id: chatId }, from: { id: callerId }, text: "/spin" };
             bot.emit("text", fakeMsg);
             return bot.answerCallbackQuery(query.id);
