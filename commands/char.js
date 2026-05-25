@@ -1,57 +1,25 @@
-console.log("✅ INDEPENDENT CHARACTER ECOSYSTEM LOADED WITH MASTER COMMANDS");
+/**
+ * VELIX OS V2.5 | CHARACTER GRID REGISTRY & SECURE TRADING MATRIX
+ * Fully Integrated with Centralized Ledger Hook & Object-Based Inventories
+ * Thread-Safe Data Mutation Protocol with Perimeter Isolated Callback Guards
+ */
 
-const fs = require("fs");
-const path = require("path");
-
-// ==========================================
-// PATHS & RESOURCE LOADING SETUP
-// ==========================================
-const dataDir = path.join(__dirname, "../data");
-const playerFile = path.join(dataDir, "players.json");
-
-// Pull existing card databases seamlessly
+// Pulling existing card databases seamlessly
 const { characters: normalCards } = require("../asset/assets.js");
 const { mythical: mythicCards } = require("../asset/mythical.js");
 
-try {
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  if (!fs.existsSync(playerFile)) fs.writeFileSync(playerFile, JSON.stringify({}), "utf8");
-} catch (err) {
-  console.error("❌ Error initializing system storage logs:", err.message);
-}
-
-let players = {};
-try { players = JSON.parse(fs.readFileSync(playerFile, "utf8")); } catch { players = {}; }
-
-const savePlayers = () => fs.writeFileSync(playerFile, JSON.stringify(players, null, 2), "utf8");
+console.log("📇 [LOADED SUCCESS] Independent Character & Trade Matrix Synced: char.js");
 
 module.exports = (bot) => {
 
-  // Dynamic profile initializer node helper
-  const getPlayer = (userId) => {
-    if (!players[userId]) {
-      players[userId] = { coins: 0, mythicalCrystals: 0, inventory: [], level: 1, xp: 0 };
-      savePlayers();
-    }
-    if (!players[userId].inventory) {
-      players[userId].inventory = [];
-      savePlayers();
-    }
-    return players[userId];
-  };
-
-  // Resolves handle tags (@Velix) down to raw data profile index strings
+  // Resolves handle tags (@Velix) down to raw user registry indicators inside memory context
   const resolveUserByTag = (mentionStr) => {
     const cleanTag = mentionStr.replace("@", "").trim().toLowerCase();
-    for (const [id, profile] of Object.entries(players)) {
-      if (profile.username && profile.username.toLowerCase() === cleanTag) {
-        return id;
-      }
-    }
-    return null;
+    // Since global dataset is parsed dynamically, lookup flows via runtime parameters
+    return null; // Fallback placeholder if custom cache arrays are separate
   };
 
-  // Temporary memory map holding active transaction packets pending authorizations
+  // Temporary transaction state memory mapped array packets
   const activeTrades = {};
 
   // ==========================================
@@ -67,10 +35,15 @@ module.exports = (bot) => {
       ]
     ];
 
-    await bot.sendMessage(chatId, "🗇 **Global Character Reference Catalog**\nSelect a rarity tier group below to see every card registered inside the game database along with their structural reference key strings:", {
-      parse_mode: "Markdown",
-      reply_markup: { inline_keyboard: inlineKeyboard }
-    });
+    await bot.sendMessage(chatId, 
+      `🗇 **VELIX OS | GLOBAL CHARACTER DIRECTORY**\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `Select a faction rarity tier group below to index every archetype registered within the central database framework along with their unique identifier keys:`, 
+      {
+        parse_mode: "Markdown",
+        reply_markup: { inline_keyboard: inlineKeyboard }
+      }
+    ).catch(e => console.error(e.message));
   });
 
   // ==========================================
@@ -79,150 +52,151 @@ module.exports = (bot) => {
   bot.onText(/\/char$/, async (msg) => {
     const chatId = msg.chat.id;
     
-    const allUniqueKeys = Array.from(new Set([...Object.keys(normalCards), ...Object.keys(mythicCards)]));
+    const allUniqueKeys = Array.from(new Set([...Object.keys(normalCards || {}), ...Object.keys(mythicCards || {})]));
     
     if (allUniqueKeys.length === 0) {
-      return bot.sendMessage(chatId, "⚠️ **The global character registry database is currently empty!**", { parse_mode: "Markdown" });
+      return bot.sendMessage(chatId, "⚠️ **System Notification:** The global character registry configuration files are vacant.", { parse_mode: "Markdown" });
     }
 
     const keyboard = [];
-    allUniqueKeys.forEach((key) => {
-      const cardName = (normalCards[key] || mythicCards[key]).name || key;
-      keyboard.push([{ text: `📇 ${cardName}`, callback_data: `vlist_${key}` }]);
+    allUniqueKeys.slice(0, 15).forEach((key) => { // Sliced to prevent hitting Telegram maximum button limits
+      const cardModule = (normalCards[key] || mythicCards[key]);
+      if (cardModule) {
+        const cardName = cardModule.name || key;
+        keyboard.push([{ text: `📇 Profile: ${cardName}`, callback_data: `vlist_${key}` }]);
+      }
     });
 
-    await bot.sendMessage(chatId, "📜 **Demon Slayer Character Registry**\nSelect a character archetype profile button from the list below to review visual specifications and ownership files:", {
-      parse_mode: "Markdown",
-      reply_markup: { inline_keyboard: keyboard }
-    });
+    await bot.sendMessage(chatId, 
+      `📜 **VELIX OS | DEMON SLAYER CHARACTER REGISTRY**\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `Select a warrior archetype from the dynamic grid below to review visual layout specifications, metrics, and profile logs:`, 
+      {
+        parse_mode: "Markdown",
+        reply_markup: { inline_keyboard: keyboard }
+      }
+    ).catch(e => console.error(e.message));
   });
 
   // Target quick lookups like /char tanjiro
-  bot.onText(/\/char (.+)/, async (msg, match) => {
+  bot.onText(/\/char\s+(.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
     const input = match[1].trim();
-    if (input.startsWith("@") || input.includes(" ")) return; // Bypasses conflicts with admin tools
+    if (input.startsWith("@") || input.includes("|")) return; // Avoids conflict boundaries with admin / trade parameters
 
     const searchInput = input.toLowerCase().replace(/\s+/g, "_");
-    const hasNormal = normalCards[searchInput] ? true : false;
-    const hasMythic = mythicCards[searchInput] ? true : false;
+    const hasNormal = normalCards && normalCards[searchInput] ? true : false;
+    const hasMythic = mythicCards && mythicCards[searchInput] ? true : false;
 
     if (!hasNormal && !hasMythic) {
-      return bot.sendMessage(chatId, `❌ **Character "${match[1]}" was not found inside registry files!**`, { parse_mode: "Markdown" });
+      return bot.sendMessage(chatId, `❌ **System Registry Error:** Character profile matrix \`"${match[1]}"\` could not be mapped inside storage indexes.`);
     }
 
     const buttons = [];
     const charName = (hasNormal ? normalCards[searchInput].name : mythicCards[searchInput].name);
 
-    if (hasNormal) buttons.push({ text: "🟢 Normal Version", callback_data: `vchar_${searchInput}_normal` });
-    if (hasMythic) buttons.push({ text: "👑 Mythic Version", callback_data: `vchar_${searchInput}_mythic` });
+    if (hasNormal) buttons.push({ text: "🟢 Normal Specs", callback_data: `vchar_${searchInput}_normal` });
+    if (hasMythic) buttons.push({ text: "👑 Mythic Specs", callback_data: `vchar_${searchInput}_mythic` });
 
-    await bot.sendMessage(chatId, `🔍 **Character Matrix Located: ${charName}**\nChoose target variation layer:`, {
+    await bot.sendMessage(chatId, `🔍 **VELIX OS | CHARACTER CELL LOCATED: ${charName.toUpperCase()}**\nChoose target configuration variation layer:`, {
       parse_mode: "Markdown",
       reply_markup: { inline_keyboard: [buttons] }
     });
   });
 
   // ==========================================
-  // 👑 3. ADMIN INVENTORY DROP VIA CHAR OVERRIDES
+  // 👑 3. ADMIN INVENTORY DROP PROTOCOL (/addchar)
   // ==========================================
-  bot.onText(/\/addchar (.+)/, async (msg, match) => {
+  bot.onText(/\/addchar\s+(.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
     const senderId = msg.from.id.toString();
 
-    const ADMIN_ID = "2086993762"; // Your exact User ID matching owner.js
+    const ADMIN_ID = "2086993762"; // Velix OS Operator Unique Master Identifier
     if (senderId !== ADMIN_ID) return;
 
     const parts = match[1].trim().split(/\s+/);
     if (parts.length < 2) {
-      return bot.sendMessage(chatId, "❌ **Format Error:** Use structure: `/addchar @username tanjiro`", { parse_mode: "Markdown" });
+      return bot.sendMessage(chatId, "❌ **Execution Syntax Refused:** Use alignment format: \`/addchar <user_id_or_tag> <card_key_id>\`", { parse_mode: "Markdown" });
     }
 
     const [userTarget, cardKeyInput] = parts;
     const cardId = cardKeyInput.toLowerCase().replace(/\s+/g, "_");
+    
+    // Standardizing targeted index boundaries
+    let targetUserId = userTarget.replace("@", "");
 
-    let targetUserId = resolveUserByTag(userTarget);
-    if (!targetUserId && !isNaN(userTarget.replace("@", ""))) {
-      targetUserId = userTarget.replace("@", "");
-    }
-
-    if (!targetUserId) {
-      return bot.sendMessage(chatId, `❌ **User Not Found:** No profile data registered for \`${userTarget}\`.`, { parse_mode: "Markdown" });
-    }
-
-    const hasNormal = normalCards[cardId] ? true : false;
-    const hasMythic = mythicCards[cardId] ? true : false;
+    const hasNormal = normalCards && normalCards[cardId] ? true : false;
+    const hasMythic = mythicCards && mythicCards[cardId] ? true : false;
 
     if (!hasNormal && !hasMythic) {
-      return bot.sendMessage(chatId, `❌ **Database Error:** Character identity node \`${cardId}\` was not located inside files!`, { parse_mode: "Markdown" });
+      return bot.sendMessage(chatId, `❌ **Database Refusal:** Character identifier mapping node \`${cardId}\` does not exist inside internal files.`, { parse_mode: "Markdown" });
     }
 
     const buttons = [];
-    if (hasNormal) buttons.push({ text: "🟢 Drop Normal", callback_data: `own_drop_${targetUserId}_${cardId}_normal` });
-    if (hasMythic) buttons.push({ text: "👑 Drop Mythical", callback_data: `own_drop_${targetUserId}_${cardId}_mythic` });
+    if (hasNormal) buttons.push({ text: "🟢 Inject Normal", callback_data: `own_drop_${targetUserId}_${cardId}_normal` });
+    if (hasMythic) buttons.push({ text: "👑 Inject Mythical", callback_data: `own_drop_${targetUserId}_${cardId}_mythic` });
 
-    await bot.sendMessage(chatId, `🎁 **Character Options Found:**\nChoose rarity level to transfer to \`${userTarget}\`:`, {
+    await bot.sendMessage(chatId, `🎁 **VELIX OS | ADMIN SYSTEM DROPS**\nChoose target matrix rarity structural layer to transfer down to client node \`${targetUserId}\`:`, {
       parse_mode: "Markdown",
       reply_markup: { inline_keyboard: [buttons] }
     });
   });
 
   // ==========================================
-  // 🤝 4. LEVEL-RESTRICTED P2P TRADING (/tradechar)
+  // 🤝 4. SYSTEM-SYNCHRONIZED P2P TRADING (/tradechar)
   // ==========================================
-  bot.onText(/\/tradechar (.+)/, async (msg, match) => {
+  bot.onText(/\/tradechar\s+(.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
     const senderId = msg.from.id.toString();
 
-    if (msg.from.username) {
-      const p = getPlayer(senderId);
-      p.username = msg.from.username;
-      savePlayers();
-    }
-
     const input = match[1].split("|").map(item => item.trim());
     if (input.length < 5) {
-      return bot.sendMessage(chatId, "❌ **Incorrect Mapping Layout!**\nUse: \`/tradechar @TargetUser | MyCardName | MyRarity | TheirCardName | TheirRarity\`", { parse_mode: "Markdown" });
+      return bot.sendMessage(chatId, `❌ **Mapping Layout Malfunction!**\n👉 *Usage:* \`/tradechar <Target_User_ID> | MyCardName | MyRarity | TheirCardName | TheirRarity\``, { parse_mode: "Markdown" });
     }
 
     const [targetMention, myCardName, myRarity, theirCardName, theirRarity] = input;
     const cleanMyRarity = myRarity.toLowerCase();
     const cleanTheirRarity = theirRarity.toLowerCase();
 
-    // Enforce matching-tier exchange balancing rules
+    // Verification of trading equivalence rules
     if (cleanMyRarity !== cleanTheirRarity) {
-      return bot.sendMessage(chatId, "❌ **Trade Vector Validation Failure:** Exchange rules strictly command balancing equivalence! **Normal cards can only trade for Normal cards, and Mythic cards can only trade for Mythic cards.**", { parse_mode: "Markdown" });
+      return bot.sendMessage(chatId, "❌ **Transaction Validation Denied:** Faction trading parameters enforce structural parity. Normal cards can only trade for Normal items, and Mythics for Mythics.", { parse_mode: "Markdown" });
     }
 
-    let receiverId = resolveUserByTag(targetMention);
-    if (!receiverId && !isNaN(targetMention.replace("@", ""))) {
-      receiverId = targetMention.replace("@", "");
-    }
-
-    if (!receiverId || !players[receiverId]) {
-      return bot.sendMessage(chatId, "❌ **Transaction Interruption:** Target trading partner registration parameters not found.", { parse_mode: "Markdown" });
-    }
+    const receiverId = targetMention.replace("@", "").trim();
 
     if (senderId === receiverId) {
-      return bot.sendMessage(chatId, "❌ **Transaction Interruption:** Loop restriction active. Self-trading paths are unverified.", { parse_mode: "Markdown" });
+      return bot.sendMessage(chatId, "❌ **Transaction Core Refusal:** Loop restriction active. Self-routing transaction vectors are invalid.", { parse_mode: "Markdown" });
     }
 
-    const senderProfile = getPlayer(senderId);
-    const receiverProfile = getPlayer(receiverId);
+    // Pull users via synchronized engine layers
+    const senderProfile = bot.getPlayerData ? bot.getPlayerData(senderId) : null;
+    const receiverProfile = bot.getPlayerData ? bot.getPlayerData(receiverId) : null;
 
-    // Dynamic search inside pipe-separated array templates
+    if (!senderProfile || !receiverProfile) {
+      return bot.sendMessage(chatId, "❌ **Transaction Aborted:** One or both user profile matrix blocks failed to initialize inside centralized ledger nodes.", { parse_mode: "Markdown" });
+    }
+
+    if (!senderProfile.inventory) senderProfile.inventory = [];
+    if (!receiverProfile.inventory) receiverProfile.inventory = [];
+
+    // Upgraded Object Standard Scan Verification Loops
     const senderOwns = senderProfile.inventory.some(item => {
-      const parts = item.split("|");
-      return parts[1].toLowerCase() === myCardName.toLowerCase() && parts[3].toLowerCase() === cleanMyRarity;
+      const itemName = typeof item === "string" ? item : (item.name || "");
+      const itemRarity = item.type || "normal";
+      return itemName.toLowerCase().includes(myCardName.toLowerCase()) && 
+             (cleanMyRarity === "mythic" ? itemRarity.includes("mythic") : !itemRarity.includes("mythic"));
     });
 
     const receiverOwns = receiverProfile.inventory.some(item => {
-      const parts = item.split("|");
-      return parts[1].toLowerCase() === theirCardName.toLowerCase() && parts[3].toLowerCase() === cleanTheirRarity;
+      const itemName = typeof item === "string" ? item : (item.name || "");
+      const itemRarity = item.type || "normal";
+      return itemName.toLowerCase().includes(theirCardName.toLowerCase()) && 
+             (cleanTheirRarity === "mythic" ? itemRarity.includes("mythic") : !itemRarity.includes("mythic"));
     });
 
-    if (!senderOwns) return bot.sendMessage(chatId, `❌ **Aborted:** You do not own \`${myCardName} (${cleanMyRarity.toUpperCase()})\`!`, { parse_mode: "Markdown" });
-    if (!receiverOwns) return bot.sendMessage(chatId, `❌ **Aborted:** Trading partner does not own \`${theirCardName} (${cleanTheirRarity.toUpperCase()})\`!`, { parse_mode: "Markdown" });
+    if (!senderOwns) return bot.sendMessage(chatId, `❌ **Trade Vector Refused:** You do not own any structural variant matching \`${myCardName}\` inside your ledger arrays.`, { parse_mode: "Markdown" });
+    if (!receiverOwns) return bot.sendMessage(chatId, `❌ **Trade Vector Refused:** Target trading partner doesn't possess any structural variant matching \`${theirCardName}\`.`, { parse_mode: "Markdown" });
 
     const tradeId = `t_${Date.now()}`;
     activeTrades[tradeId] = {
@@ -234,166 +208,201 @@ module.exports = (bot) => {
       receiverRarity: cleanTheirRarity
     };
 
-    await bot.sendMessage(chatId, `🤝 **Secure Trading Instance Generated!**\n\n👤 **Offer From Sender:** \`${myCardName} (${cleanMyRarity.toUpperCase()})\`\n👤 **Requested From Partner:** \`${theirCardName} (${cleanTheirRarity.toUpperCase()})\`\n\nDo you authorize this asset swap sequence initialization?`, {
-      parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "✅ Accept Exchange", callback_data: `t_acc_${tradeId}` },
-            { text: "❌ Decline Swap", callback_data: `t_dec_${tradeId}` }
+    await bot.sendMessage(chatId, 
+      `🤝 **VELIX OS | SECURE ESCROW TRANSACTION GENERATED**\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `👤 **Sender Outgoing Offer:** \`${myCardName.toUpperCase()} [${cleanMyRarity.toUpperCase()}]\`\n` +
+      `👤 **Recipient Incoming Demand:** \`${theirCardName.toUpperCase()} [${cleanTheirRarity.toUpperCase()}]\`\n\n` +
+      `*Target confirmation recipient must initialize authorization click below:*`, 
+      {
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "✅ Authorize Escrow Swap", callback_data: `char_t_acc_${tradeId}` },
+              { text: "❌ Terminate Session", callback_data: `char_t_dec_${tradeId}` }
+            ]
           ]
-        ]
+        }
       }
-    });
+    );
   });
 
   // ==========================================
-  // 🎮 5. GLOBAL INTERACTIVE CALLBACK INTERFACES
+  // 🎮 5. PERIMETER ISOLATED CALLBACK QUERIES
   // ==========================================
   bot.on("callback_query", async (query) => {
     const chatId = query.message.chat.id;
     const clickerId = query.from.id.toString();
     const data = query.data;
 
-    if (query.from.username) {
-      const p = getPlayer(clickerId);
-      p.username = query.from.username;
-      savePlayers();
-    }
+    // Guard checking if callback data belongs to this module context strictly
+    const isCharListMode = data === "global_list_normal" || data === "global_list_mythic";
+    const isVListMode = data.startsWith("vlist_");
+    const isVCharMode = data.startsWith("vchar_");
+    const isTradeMode = data.startsWith("char_t_");
+    const isAdminDropMode = data.startsWith("own_drop_");
 
-    // GLOBAL DATABASE DIRECTORY INDEX PARSER ROUTE
-    if (data === "global_list_normal" || data === "global_list_mythic") {
-      bot.answerCallbackQuery(query.id);
+    if (!isCharListMode && !isVListMode && !isVCharMode && !isTradeMode && !isAdminDropMode) return;
 
+    bot.answerCallbackQuery(query.id);
+
+    // 1. GLOBAL DATABASE MAP INTERPRETER BLOCK
+    if (isCharListMode) {
       const targetDB = (data === "global_list_mythic") ? mythicCards : normalCards;
       const targetLabel = (data === "global_list_mythic") ? "👑 MYTHICAL" : "🟢 NORMAL";
-      const dbKeys = Object.keys(targetDB);
+      const dbKeys = Object.keys(targetDB || {});
 
       if (dbKeys.length === 0) {
-        return bot.sendMessage(chatId, `⚠️ The global **${targetLabel}** database file contains no registered assets.`, { parse_mode: "Markdown" });
+        return bot.sendMessage(chatId, `⚠️ **System Index Alert:** The global **${targetLabel}** registries are empty.`, { parse_mode: "Markdown" });
       }
 
-      let responseMessage = `📋 **GLOBAL ${targetLabel} CARD CATALOG REGISTRY**\n`;
-      responseMessage += `_Use these exact Card Key IDs to look up specs or perform administrative actions:_\n\n`;
+      let responseMessage = `📋 **VELIX OS | ${targetLabel} ARCHETYPE REGISTER**\n` +
+                            `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
       dbKeys.forEach((key, index) => {
         const card = targetDB[key];
-        const dispName = card.name || key;
-        const dispType = card.type || "N/A";
-        responseMessage += `${index + 1}. 🎴 **${dispName}**\n🔑 **Card Key ID:** \`${key}\`\n⚡ Element/Type: \`${dispType}\`\n\n`;
+        responseMessage += `${index + 1}. 🎴 **${card.name || key}**\n   🔑 Registry ID: \`${key}\` | ⚡ Elemental Type: \`${card.type || "Unset"}\`\n\n`;
       });
 
       return bot.sendMessage(chatId, responseMessage, { parse_mode: "Markdown" });
     }
 
-    // LIST ARCHETYPE PROFILE SELECTOR ROUTE
-    if (data.startsWith("vlist_")) {
+    // 2. DISPATCH SPECIFIC VARIANT OPTIONS MENU
+    if (isVListMode) {
       const cardKey = data.replace("vlist_", "");
       const buttons = [];
-      if (normalCards[cardKey]) buttons.push({ text: "🟢 Normal Version", callback_data: `vchar_${cardKey}_normal` });
-      if (mythicCards[cardKey]) buttons.push({ text: "👑 Mythic Version", callback_data: `vchar_${cardKey}_mythic` });
+      if (normalCards && normalCards[cardKey]) buttons.push({ text: "🟢 Normal Version", callback_data: `vchar_${cardKey}_normal` });
+      if (mythicCards && mythicCards[cardKey]) buttons.push({ text: "👑 Mythic Version", callback_data: `vchar_${cardKey}_mythic` });
 
-      bot.answerCallbackQuery(query.id);
-      return bot.sendMessage(chatId, `✨ **Card Configuration Layer Identified:**\nChoose structural layout path to view image arrays:`, {
+      return bot.sendMessage(chatId, `✨ **Configuration Strata Remapped:**\nSelect visual grid specifications framework path:`, {
         reply_markup: { inline_keyboard: [buttons] }
       });
     }
 
-    // DIRECT INTERACTIVE LOOKUP PANEL
-    if (data.startsWith("vchar_")) {
+    // 3. RENDER DESIGNATED PROFILE DATA SHEETS
+    if (isVCharMode) {
       const [_, charKey, rarity] = data.split("_");
-      const cardData = (rarity === "mythic") ? mythicCards[charKey] : normalCards[charKey];
+      const cardData = (rarity === "mythic") ? (mythicCards ? mythicCards[charKey] : null) : (normalCards ? normalCards[charKey] : null);
 
-      if (!cardData) return bot.answerCallbackQuery(query.id, { text: "Database node pointer invalid!", show_alert: true });
+      if (!cardData) return;
 
-      const player = getPlayer(clickerId);
+      const player = bot.getPlayerData ? bot.getPlayerData(clickerId) : { inventory: [] };
+      if (!player.inventory) player.inventory = [];
+
       const cardName = cardData.name || charKey;
       
       const ownsCard = player.inventory.some(item => {
-        const parts = item.split("|");
-        return parts[1].toLowerCase() === cardName.toLowerCase() && parts[3].toLowerCase() === rarity;
+        const itemName = typeof item === "string" ? item : (item.name || "");
+        return itemName.toLowerCase().includes(cardName.toLowerCase());
       });
       
-      const statusText = ownsCard ? "✅ **Status:** Owned inside profile catalog!" : "❌ **Status:** Unowned configuration node.";
-      const rarityTag = rarity === "mythic" ? "👑 MYTHIC" : "🟢 NORMAL";
+      const statusText = ownsCard ? "✅ **Registry Clearance:** Owned within your active squad profiles!" : "❌ **Registry Clearance:** Unowned core frame module.";
+      const rarityTag = rarity === "mythic" ? "👑 MYTHIC APEX" : "🟢 NORMAL LAYER";
       
-      const captionMessage = `✨ **Character Profile:** ${cardName} (${rarityTag})\n` +
-                             `❤️ **HP Metric:** ${cardData.hp || 100} | ⚔️ **ATK Rating:** ${cardData.atk || 10}\n\n` +
-                             `📝 **Data Logs:** ${cardData.desc || "No custom specification entries."}\n\n` +
-                             `---------------------------\n` +
+      const captionMessage = `✨ **VELIX OS | INTEL DATABASE DISPLAY**\n` +
+                             `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                             `🎴 **Identity:** \`${cardName}\` [${rarityTag}]\n` +
+                             `❤️ **HP Core Capacity:** \`${cardData.hp || 100}\` | ⚔️ **ATK Lethality:** \`${cardData.atk || 10}\`\n` +
+                             `📝 **System Specifications Logs:** *${cardData.desc || "No custom logs provided."}*\n` +
+                             `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                              `${statusText}`;
 
-      bot.answerCallbackQuery(query.id);
       const cardImage = cardData.img || cardData.image || cardData.url;
 
-      if (cardImage && cardImage.startsWith("http")) {
-        return bot.sendPhoto(chatId, cardImage, { caption: captionMessage, parse_mode: "Markdown" });
+      if (cardImage && String(cardImage).startsWith("http")) {
+        return bot.sendPhoto(chatId, cardImage, { caption: captionMessage, parse_mode: "Markdown" }).catch(() => {
+          bot.sendMessage(chatId, captionMessage, { parse_mode: "Markdown" });
+        });
       } else {
         return bot.sendMessage(chatId, captionMessage, { parse_mode: "Markdown" });
       }
     }
 
-    // Note: The administrative own_drop_ listener has been completely dropped from this file
-    // to allow owner.js to execute administrative operations independently without double message triggers.
+    // 4. ADMIN SECTOR DROP DIRECT MUTATION LOGIC
+    if (isAdminDropMode) {
+      const [_, __, targetUserId, cardId, rarity] = data.split("_");
+      
+      const targetProfile = bot.getPlayerData ? bot.getPlayerData(targetUserId) : null;
+      if (!targetProfile) return;
+      if (!targetProfile.inventory) targetProfile.inventory = [];
 
-    // TRADE AUTHORIZATION AGREEMENT LOGIC
-    if (data.startsWith("t_acc_")) {
-      const tradeId = data.replace("t_acc_", "");
+      const assetSource = rarity === "mythic" ? mythicCards[cardId] : normalCards[cardId];
+      if (!assetSource) return;
+
+      targetProfile.inventory.push({
+        id: cardId,
+        name: assetSource.name || cardId,
+        type: rarity === "mythic" ? "mythic_slayer" : "normal_slayer",
+        level: 1,
+        power: parseInt(assetSource.power || assetSource.atk, 10) || 200,
+        acquiredAt: new Date().toISOString()
+      });
+
+      if (bot.savePlayerData) bot.savePlayerData(targetUserId, targetProfile);
+
+      bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+      return bot.sendMessage(chatId, `🎁 **VELIX OS CORE OVERRIDE:** Successfully injected \`${assetSource.name} [${rarity.toUpperCase()}]\` down into client core inventory array pipeline \`${targetUserId}\`.`);
+    }
+
+    // 5. TRANSACTION SECURITY ACCEPT PROTOCOL
+    if (data.startsWith("char_t_acc_")) {
+      const tradeId = data.replace("char_t_acc_", "");
       const trade = activeTrades[tradeId];
 
-      if (!trade) return bot.answerCallbackQuery(query.id, { text: "Session tracking instance expired.", show_alert: true });
-      if (clickerId !== trade.receiver) return bot.answerCallbackQuery(query.id, { text: "Unauthorized system mapping. You are not the transaction recipient target!", show_alert: true });
+      if (!trade) return bot.sendMessage(chatId, "❌ **Transaction Timeout:** The requested trade tracking structure session expired.");
+      if (clickerId !== trade.receiver) return; // Action lock barrier
 
-      const senderProfile = getPlayer(trade.sender);
-      const receiverProfile = getPlayer(trade.receiver);
+      const senderProfile = bot.getPlayerData ? bot.getPlayerData(trade.sender) : null;
+      const receiverProfile = bot.getPlayerData ? bot.getPlayerData(trade.receiver) : null;
+
+      if (!senderProfile || !receiverProfile) return;
 
       const sIndex = senderProfile.inventory.findIndex(item => {
-        const parts = item.split("|");
-        return parts[1].toLowerCase() === trade.senderCardName.toLowerCase() && parts[3].toLowerCase() === trade.senderRarity;
+        const name = typeof item === "string" ? item : (item.name || "");
+        return name.toLowerCase().includes(trade.senderCardName.toLowerCase());
       });
 
       const rIndex = receiverProfile.inventory.findIndex(item => {
-        const parts = item.split("|");
-        return parts[1].toLowerCase() === trade.receiverCardName.toLowerCase() && parts[3].toLowerCase() === trade.receiverRarity;
+        const name = typeof item === "string" ? item : (item.name || "");
+        return name.toLowerCase().includes(trade.receiverCardName.toLowerCase());
       });
 
       if (sIndex === -1 || rIndex === -1) {
         delete activeTrades[tradeId];
-        return bot.sendMessage(chatId, "❌ **Transaction Processing Fault:** Systems shifted state records prior to finalization.");
+        return bot.sendMessage(chatId, "❌ **Transaction Failure:** State verification sequence detected a missing item token artifact right before completion. Swapping aborted.");
       }
 
+      // Safe shifting array indexes elements
       const [sItem] = senderProfile.inventory.splice(sIndex, 1);
       const [rItem] = receiverProfile.inventory.splice(rIndex, 1);
 
       senderProfile.inventory.push(rItem);
       receiverProfile.inventory.push(sItem);
 
-      savePlayers();
-      delete activeTrades[tradeId];
+      // Save centralized records state mutations
+      if (bot.savePlayerData) {
+        bot.savePlayerData(trade.sender, senderProfile);
+        bot.savePlayerData(trade.receiver, receiverProfile);
+      }
 
-      bot.answerCallbackQuery(query.id);
+      delete activeTrades[tradeId];
       bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
 
-      await bot.sendMessage(chatId, `🎉 **The trade is completed successfully!**\n\nSecure items have been mutated across player inventories. Check balance profiles to review saved results.`);
-      
-      const sData = (trade.senderRarity === "mythic" ? mythicCards : normalCards)[trade.senderCardName.toLowerCase().replace(/\s+/g, "_")];
-      if (sData && (sData.img || sData.image)) {
-        await bot.sendPhoto(chatId, sData.img || sData.image, { caption: `✅ **Transferred Item Visual Record:** ${sData.name}` });
-      }
+      return bot.sendMessage(chatId, `🎉 **VELIX OS | TRANSACTION PROTOCOL SEALED**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\nTrade verified and items successfully mutated across player accounts profiles. Execute \`/inventory\` to trace results.`);
     }
 
-    // TRADE REFUSAL CANCEL PROCESS ROUTE
-    if (data.startsWith("t_dec_")) {
-      const tradeId = data.replace("t_dec_", "");
+    // 6. TRANSACTION CORE CANCELLATION DETECTOR ROUTE
+    if (data.startsWith("char_t_dec_")) {
+      const tradeId = data.replace("char_t_dec_", "");
       const trade = activeTrades[tradeId];
 
-      if (!trade) return bot.answerCallbackQuery(query.id, { text: "Session expired.", show_alert: true });
-      if (clickerId !== trade.receiver && clickerId !== trade.sender) return bot.answerCallbackQuery(query.id, { text: "Unauthorized interaction vector.", show_alert: true });
+      if (!trade) return;
+      if (clickerId !== trade.receiver && clickerId !== trade.sender) return;
 
       delete activeTrades[tradeId];
-      bot.answerCallbackQuery(query.id);
       bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
-      return bot.sendMessage(chatId, "❌ **Trade transaction request was cancelled successfully.**");
+      return bot.sendMessage(chatId, "❌ **Transaction Notice:** Escrow swap negotiation layer terminated by party operator.");
     }
   });
 };
