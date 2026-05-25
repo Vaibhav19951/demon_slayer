@@ -1,12 +1,16 @@
 {
   "name": "demon_slayer",
   "version": "1.0.0",
+  "description": "VELIX OS V2.5 - Advanced Demon Slayer Telegram Bot Core",
   "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
   "dependencies": {
     "node-telegram-bot-api": "^0.66.0",
     "dotenv": "^16.4.5"
   },
-  "scripts": {
-    "start": "node index.js"
-  }
+  "author": "VELIX",
+  "license": "ISC"
 }
