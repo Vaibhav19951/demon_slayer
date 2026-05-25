@@ -1,6 +1,6 @@
 /**
- * VELIX OS V2.5 | CENTRALized WARRIOR SUMMONING GATEWAY
- * Fully Linked with Centralized Ledger & Inventory Engine
+ * VELIX OS V2.5 | CENTRALIZED WARRIOR SUMMONING GATEWAY
+ * 🚨 FIXED: Fully Aligned with 3-Core Currency Matrix (mythicalCrystals)
  * Concurrency Safe & Cost Validated (2000+ Active Users)
  */
 
@@ -19,18 +19,18 @@ module.exports = (bot) => {
     const player = bot.getPlayerData(userId);
     if (!player) return;
 
-    // Safety fallback for crystal field validation
-    if (player.crystals === undefined) player.crystals = 0;
+    // 🚨 FIXED: Remapped from .crystals to core .mythicalCrystals
+    if (player.mythicalCrystals === undefined) player.mythicalCrystals = 0;
 
     // 2. Cost Verification Guard Clause (1 Crystal per summon)
     const summonCost = 1;
-    if (player.crystals < summonCost) {
+    if (player.mythicalCrystals < summonCost) {
       const lowFundsLayout = 
         `❌ **SUMMONING GATEWAY REJECTED**\n` +
         `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `🚨 **Reason:** Insufficient Spiritual Crystals.\n` +
+        `🚨 **Reason:** Insufficient Mythical Crystals.\n` +
         `💎 **Required:** \`${summonCost}\` Crystal\n` +
-        `💰 **Your Vault:** \`${player.crystals}\` Crystals\n\n` +
+        `💰 **Your Vault:** \`${player.mythicalCrystals}\` Crystals\n\n` +
         `💡 *Run \`/task\` to earn precious crystals or exchange your Crow Coins via \`/convert c2cr <amount>\`!*`;
       
       return bot.sendMessage(chatId, lowFundsLayout, { parse_mode: "Markdown" });
@@ -44,12 +44,11 @@ module.exports = (bot) => {
     const randomCharacter = characters[Math.floor(Math.random() * characters.length)];
 
     // 4. Update ledger balances and inventory structures safely
-    player.crystals -= summonCost;
+    player.mythicalCrystals -= summonCost; // 🚨 FIXED KEY
 
-    // Check both standard naming conventions to avoid data loss overrides
     if (!player.inventory) player.inventory = [];
     
-    // Create character instance object block
+    // Create character instance object block aligned with upgrade structure
     const characterInstance = {
       name: randomCharacter.name,
       rarity: randomCharacter.rarity || "Common",
@@ -57,11 +56,8 @@ module.exports = (bot) => {
       exp: 0
     };
 
-    // Save to character pool registry arrays
+    // Save strictly to clean single inventory system
     player.inventory.push(characterInstance);
-    if (player.owned_characters) {
-      player.owned_characters.push(characterInstance);
-    }
 
     // 5. Commit state modifications updates back to global memory files
     bot.savePlayerData(userId, player);
@@ -74,9 +70,9 @@ module.exports = (bot) => {
         `✨ *The space-time veil tears apart as a spiritual entity responds to your summon call...*\n\n` +
         `👤 **CHARACTER:** *${randomCharacter.name}*\n` +
         `🔮 **RARITY:**  \`[ ${randomCharacter.rarity || "COMMON"} ]\`\n\n` +
-        `📉 **Transaction:** \`-${summonCost}\` Precious Crystal Deducted.\n` +
+        `📉 **Transaction:** \`-${summonCost}\` Mythical Crystal Deducted.\n` +
         `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `✅ *Warrior data registered and synchronized with your /profile Card Roster!*`;
+        `  **VELIX OS UPDATE:** *Warrior data registered and synchronized with your /profile Card Roster!*`;
 
       await bot.sendPhoto(chatId, randomCharacter.image, {
         caption: summonSuccessLayout,
