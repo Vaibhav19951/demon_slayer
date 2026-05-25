@@ -7,7 +7,8 @@
 // 📦 All Central Asset Registries Linked Natively
 const assetRegistry = require("../asset/assets");
 const mythicalRegistry = require("../asset/mythical");
-const godTierRegistry = require("../asset/godtier"); // Nayi God-Tier registry file ka path
+// ✅ FIXED: Path updated to point directly to godchar.js
+const godTierRegistry = require("../asset/godchar"); 
 
 // 🛠️ Base pool parsing from central database
 const characterPool = assetRegistry.characterRawArray || Object.keys(assetRegistry.characters).map(key => {
@@ -133,7 +134,6 @@ module.exports = (bot) => {
             if (mode === "normal") {
                 const randRoll = Math.random() * 100;
 
-                // 🪙 Coins platform:
                 // 0.1% Micro-chance for God-Tier drop from coins
                 if (randRoll < 0.1 && godTierPool.length > 0) {
                     const dropped = godTierPool[Math.floor(Math.random() * godTierPool.length)];
@@ -165,7 +165,6 @@ module.exports = (bot) => {
                 const randChance = Math.random() * 100;
                 let dropped = null;
 
-                // ✨ Mythical Premium Platform Rates:
                 // 💥 3.5% Super Rare chance to hit a GOD-TIER character!
                 if (randChance < 3.5 && godTierPool.length > 0) {
                     dropped = godTierPool[Math.floor(Math.random() * godTierPool.length)];
@@ -196,7 +195,6 @@ module.exports = (bot) => {
                     player.materials["universal_blessing"] = (parseInt(player.materials["universal_blessing"], 10) || 0) + 1;
                     lootEarned.push("💎 Universal Blessing Ore Piece");
                 } else {
-                    // Random dynamic essence matching structure
                     const dropped = characterPool[Math.floor(Math.random() * characterPool.length)];
                     let tier = dropped.rarity.toLowerCase().replace(/\s+/g, '_');
                     let baseCleanName = dropped.name.toLowerCase().replace(/🔥|awakened|limited|\[.*?\]|\(.*?\)/g, '').trim().replace(/\s+/g, '_');
@@ -226,7 +224,6 @@ module.exports = (bot) => {
         ).catch(() => {});
     }
 
-    // Modularized function to avoid redundant injection and handle duplicate conversions smoothly
     function processGachaDrop(player, card, rarityName, lootEarned) {
         let cleanRarity = rarityName.toLowerCase().replace(/\s+/g, '_');
         let baseCleanName = card.name.toLowerCase().replace(/🔥|awakened|limited|\[.*?\]|\(.*?\)/g, '').trim().replace(/\s+/g, '_');
@@ -241,7 +238,6 @@ module.exports = (bot) => {
             player.materials[blessingKey] = (parseInt(player.materials[blessingKey], 10) || 0) + 1;
             lootEarned.push(`🔄 Duplicate [${card.name}] Converted ➔ +2 ${rarityName.toUpperCase()} Essence, +1 Blessing`);
         } else {
-            // Compute starting combat power metrics safely
             let calcPower = card.power || card.atk || 100;
 
             player.inventory.push({ 
@@ -259,7 +255,6 @@ module.exports = (bot) => {
                 awakeningStage: card.awakeningStage || 0
             });
             
-            // Premium Badges assigned inside reports dynamically
             let badge = "🃏";
             if (rarityName === "God-Tier") badge = "⚡ [GOD-TIER]";
             else if (rarityName === "Mythical Limited") badge = "👑 [MYTHICAL LIMITED]";
