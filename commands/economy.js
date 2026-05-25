@@ -1,155 +1,168 @@
-// ==========================================
-// 🪙 AUTOMATED CORPS ECONOMY CORE SYSTEM
-// ==========================================
-const fs = require('fs');
-const path = require('path');
-
-const dbPath = path.join(process.cwd(), 'data', 'players.json');
-
-// --- DATABASE UTILITIES (Shared via Global Object to keep loader safe)
-global.economyDB = {
-    getDB: function() {
-        try {
-            if (!fs.existsSync(dbPath)) {
-                fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-                fs.writeFileSync(dbPath, JSON.stringify({}), 'utf8');
-            }
-            return JSON.parse(fs.readFileSync(dbPath, 'utf8') || '{}');
-        } catch (e) {
-            console.error("🚨 DB Read Error:", e);
-            return {};
-        }
-    },
-    saveDB: function(data) {
-        try {
-            fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
-        } catch (e) {
-            console.error("🚨 DB Write Error:", e);
-        }
-    },
-    sanitizeUserObject: function(user) {
-        let u = user || {};
-        let currentCoins = u.coins !== undefined ? u.coins : 500;
-        let currentCrystals = u.crystals !== undefined ? u.crystals : 0;
-        let currentMythic = u.mythic !== undefined ? u.mythic : (u.tokens !== undefined ? u.tokens : 0);
-
-        return {
-            coins: Math.max(0, parseInt(currentCoins, 10) || 500),
-            crystals: Math.max(0, parseInt(currentCrystals, 10) || 0),
-            mythic: Math.max(0, parseInt(currentMythic, 10) || 0),
-            inventory: Array.isArray(u.inventory) ? u.inventory : [],
-            materials: u.materials && typeof u.materials === 'object' ? u.materials : {},
-            lastWork: parseInt(u.lastWork, 10) || 0,
-            lastTask: parseInt(u.lastTask, 10) || 0
-        };
-    }
-};
+/**
+ * VELIX OS V2.5 - AUTOMATED CORPS ECONOMY MODULE
+ * Optimized for High-Concurrency Traffic (2000+ Users)
+ * Fully Linked with Centralized Ledger System
+ */
 
 module.exports = (bot) => {
-    // 🏦 /balance
+
+    // 🏦 /balance - INSPECT SLAYER FINANCIAL REGISTRY
     bot.onText(/\/balance/, (msg) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
 
-        let db = global.economyDB.getDB();
-        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
-        const p = db[userId];
+        // Centralized Data Fetch
+        const player = bot.getPlayerData(userId);
+        if (!player) return;
 
-        const report = `💰 **SLAYER FINANCIAL REGISTRY**\n` +
-                       `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                       `• 🪙 **Crow Coins:** \`${p.coins.toLocaleString()}\` \n` +
-                       `• 💎 **Crystals:** \`${p.crystals.toLocaleString()}\` \n` +
-                       `• ✨ **Mythic Tokens:** \`${p.mythic.toLocaleString()}\` \n\n` +
-                       `💼 **Inventory Size:** \`${p.inventory.length}\` Cards loaded.\n` +
-                       `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-        bot.sendMessage(chatId, report, { parse_mode: "Markdown" });
+        // Fallback variables for extra security against undefined errors
+        const crystals = player.crystals !== undefined ? player.crystals : 0;
+        const essence = player.essence !== undefined ? player.essence : 0;
+        const ownedChars = player.owned_characters ? player.owned_characters.length : 0;
+
+        const report = 
+            `🏮 **VELIX OS | SLAYER FINANCIAL REGISTRY** 🏮\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+            `👤 **Slayer Account:** \`${userId}\`\n` +
+            `⚔️ **Corps Status:** Verified\n\n` +
+            `• 🪙 **Crow Coins:** \`${player.coins.toLocaleString()}\`\n` +
+            `• 💎 **Crystals:** \`${crystals.toLocaleString()}\`\n` +
+            `• ✨ **Primary Essence:** \`${essence.toLocaleString()}\`\n\n` +
+            `💼 **Inventory Status:** \`${ownedChars}\` Cards synchronized.\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `🦅 *Keep your vault guarded. The Muzan threats grow close.*`;
+
+        bot.sendMessage(chatId, report, { parse_mode: "Markdown" }).catch(err => console.error("❌ Balance view drop failure:", err.message));
     });
 
-    // ⚒️ /work
+    // ⚒️ /work - PATROL SURROUNDING SECTORS
     bot.onText(/\/work/, (msg) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
         const now = Date.now();
-        const cooldown = 5 * 60 * 1000;
+        const cooldown = 5 * 60 * 1000; // 5 Minutes Cooldown
 
-        let db = global.economyDB.getDB();
-        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
-        let p = db[userId];
+        const player = bot.getPlayerData(userId);
+        if (!player) return;
 
-        if (now - p.lastWork < cooldown) {
-            const remaining = Math.ceil((cooldown - (now - p.lastWork)) / 1000);
-            return bot.sendMessage(chatId, `⏳ **Exhaustion Alert!** Slayers need rest. Wait \`${remaining}s\` before your next patrol.`);
+        // Ensure last_work property exists safely inside data framework
+        if (!player.last_work) player.last_work = 0;
+
+        if (now - player.last_work < cooldown) {
+            const remaining = Math.ceil((cooldown - (now - player.last_work)) / 1000);
+            return bot.sendMessage(chatId, `⏳ **Exhaustion Alert!**\n━━━━━━━━━━━━━━━━━━━━━\nSlayers need rest to preserve their Breathing Styles. Your stamina restores in \`${remaining}s\`.`);
         }
 
+        // Generate safe random values
         const payout = Math.floor(Math.random() * 80) + 50;
-        p.coins += payout;
-        p.lastWork = now;
+        player.coins += payout;
+        player.last_work = now;
 
-        db[userId] = p;
-        global.economyDB.saveDB(db);
+        // Commit to central memory registry
+        bot.savePlayerData(userId, player);
 
-        bot.sendMessage(chatId, `🦅 **Patrol Successful!** You secured the area perimeter and earned 🪙 \`${payout}\` Crow Coins.`);
+        const workSucessReport = 
+            `🦅 **CORPS PATROL SUCCESSFUL**\n` +
+            `━━━━━━━━━━━━━━━━━━━━━\n` +
+            `You deployed into the dark perimeter sectors, neutralized a minor demon scout threat, and secured the village line.\n\n` +
+            `💰 **Reward Dispatched:** 🪙 \`${payout}\` Crow Coins\n` +
+            `⚖️ **Ledger Status:** Profile balances synchronized.`;
+
+        bot.sendMessage(chatId, workSucessReport, { parse_mode: "Markdown" });
     });
 
-    // 📜 /task
+    // 📜 /task - CORE RANK EXPEDITION ORDERS
     bot.onText(/\/task/, (msg) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
         const now = Date.now();
-        const cooldown = 20 * 60 * 60 * 1000;
+        const cooldown = 20 * 60 * 60 * 1000; // 20 Hours Cooldown
 
-        let db = global.economyDB.getDB();
-        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
-        let p = db[userId];
+        const player = bot.getPlayerData(userId);
+        if (!player) return;
 
-        if (now - p.lastTask < cooldown) {
-            const remHrs = Math.ceil((cooldown - (now - p.lastTask)) / (1000 * 60 * 60));
-            return bot.sendMessage(chatId, `📜 **Demon Crest Locked!** Next official rank orders arrive in \`${remHrs} hours\`.`);
+        if (!player.last_task) player.last_task = 0;
+        if (player.crystals === undefined) player.crystals = 0;
+
+        if (now - player.last_task < cooldown) {
+            const remainingMs = cooldown - (now - player.last_task);
+            const remHrs = Math.floor(remainingMs / (1000 * 60 * 60));
+            const remMins = Math.ceil((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+            return bot.sendMessage(chatId, `📜 **DEMON CREST ENVELOPE LOCKED**\n━━━━━━━━━━━━━━━━━━━━━\nThe Kasugai Crow is still gathering intel. Next official high-tier rank orders arrive in \`${remHrs}h ${remMins}m\`.`);
         }
 
         const coinReward = 200;
         const crystalReward = 2;
 
-        p.coins += coinReward;
-        p.crystals += crystalReward;
-        p.lastTask = now;
+        player.coins += coinReward;
+        player.crystals += crystalReward;
+        player.last_task = now;
 
-        db[userId] = p;
-        global.economyDB.saveDB(db);
+        // Commit changes to central system files safely
+        bot.savePlayerData(userId, player);
 
-        bot.sendMessage(chatId, `📜 **MISSION COMPLETION NOTICE**\n━━━━━━━━━━━━━━━━━━━━━\nRank mission achieved! Received:\n• 🪙 \`${coinReward}\` Coins\n• 💎 \`${crystalReward}\` Crystals\n━━━━━━━━━━━━━━━━━━━━━\nYour accounts are fully synchronized.`);
+        const missionReport = 
+            `📜 **MISSION COMPLETION NOTICE**\n` +
+            `━━━━━━━━━━━━━━━━━━━━━\n` +
+            `Rank mission objectives fully achieved! Your battle report has been reviewed at headquarters.\n\n` +
+            `**Acquired Assets Loot Drop:**\n` +
+            `• 🪙 \`${coinReward}\` Crow Coins\n` +
+            `• 💎 \`${crystalReward}\` Precious Crystals\n` +
+            `━━━━━━━━━━━━━━━━━━━━━\n` +
+            `✅ *Transaction secure. Assets loaded to profile ledger.*`;
+
+        bot.sendMessage(chatId, missionReport, { parse_mode: "Markdown" });
     });
 
-    // 🔀 /convert
+    // 🔀 /convert - VAULT ASSET EXCHANGE FORMULA
     bot.onText(/\/convert\s*(\w*)\s*(\d*)/, (msg, match) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
 
-        let db = global.economyDB.getDB();
-        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
-        let p = db[userId];
+        const player = bot.getPlayerData(userId);
+        if (!player) return;
+
+        if (player.crystals === undefined) player.crystals = 0;
 
         const direction = match[1] ? match[1].toLowerCase() : "";
         const amount = parseInt(match[2], 10);
 
+        // System Syntax Guard Clause
         if (!direction || !amount || amount <= 0) {
-            return bot.sendMessage(chatId, `❌ **Syntax: \`/convert c2cr <amount>\`**\nRate: \`100 Coins\` -> \`1 Crystal\``);
+            const syntaxLayout = 
+                `❌ **INVALID EXCHANGE SYNTAX**\n` +
+                `━━━━━━━━━━━━━━━━━━━━━\n` +
+                `👉 **Command Usage:** \`/convert c2cr <amount>\`\n\n` +
+                `📊 **Official Exchange Rates:**\n` +
+                `└── \`100 Crow Coins\` ➡️ \`1 Precious Crystal\``;
+            return bot.sendMessage(chatId, syntaxLayout, { parse_mode: "Markdown" });
         }
 
         if (direction === "c2cr") {
             const cost = amount * 100;
-            if (p.coins < cost) {
-                return bot.sendMessage(chatId, `❌ **Insufficent Funds!** Exchange requires 🪙 \`${cost}\` Coins for \`${amount}\` Crystals.`);
+            if (player.coins < cost) {
+                return bot.sendMessage(chatId, `❌ **INSUFFICIENT CAPITAL**\n━━━━━━━━━━━━━━━━━━━━━\nThis trade action requires 🪙 \`${cost}\` Crow Coins to authorize the transformation into 💎 \`${amount}\` Crystals.`);
             }
-            p.coins -= cost;
-            p.crystals += amount;
 
-            db[userId] = p;
-            global.economyDB.saveDB(db);
+            // Execute Ledger Adjustments
+            player.coins -= cost;
+            player.crystals += amount;
 
-            bot.sendMessage(chatId, `✅ **Vault Transaction Certified!** Converted 🪙 \`${cost}\` Coins into 💎 \`${amount}\` Crystals.`);
+            // Save status safely
+            bot.savePlayerData(userId, player);
+
+            const conversionReport = 
+                `✅ **VAULT TRANSACTION CERTIFIED**\n` +
+                `━━━━━━━━━━━━━━━━━━━━━\n` +
+                `The butterfly mansion accounting wing processed your conversion formula.\n\n` +
+                `📉 **Deducted Assets:** 🪙 \`${cost}\` Crow Coins\n` +
+                `📈 **Credited Assets:** 💎 \`${amount}\` Precious Crystals\n` +
+                `━━━━━━━━━━━━━━━━━━━━━\n` +
+                `✨ *Vault ledgers have updated completely.*`;
+
+            bot.sendMessage(chatId, conversionReport, { parse_mode: "Markdown" });
         } else {
-            bot.sendMessage(chatId, "❌ **Unknown Exchange Formula!** Valid operations: `c2cr` (Coins to Crystals).");
+            bot.sendMessage(chatId, "❌ **UNKNOWN FORMULA MATRIX**\n\nThe configuration profile only supports the operational trade variable: \`c2cr\`.");
         }
     });
 };
