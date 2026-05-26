@@ -1,6 +1,6 @@
 {
   "name": "demon_slayer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "VELIX OS V2.5 - Advanced Demon Slayer Telegram Bot Core",
   "main": "index.js",
   "scripts": {
