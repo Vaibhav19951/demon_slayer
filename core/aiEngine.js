@@ -16,33 +16,35 @@ async function askJarvis(prompt) {
 
     const result = await model.generateContent(
       `You are Jarvis, a smart AI assistant inside a Demon Slayer RPG Telegram bot.
-      Keep replies short, helpful, cool, and human-like.
+Keep replies short, helpful, cool, and human-like.
 
-      User: ${prompt}`
+User: ${prompt}`
     );
 
     return result.response.text();
 
-} catch (err) {
+  } catch (err) {
 
-  console.log("JARVIS ERROR:", err);
+    console.log("JARVIS ERROR:", err);
 
-  // Gemini quota exceeded
-  if (err.status === 429) {
-    return "⚠️ Jarvis is overloaded right now. Try again in a moment.";
+    // Quota exceeded
+    if (err.status === 429) {
+      return "⚠️ Jarvis is overloaded right now. Try again later.";
+    }
+
+    // Invalid API
+    if (err.status === 401) {
+      return "⚠️ Jarvis authentication failed.";
+    }
+
+    // Model issue
+    if (err.status === 404) {
+      return "⚠️ Jarvis model configuration error.";
+    }
+
+    // Generic fallback
+    return "⚠️ Jarvis is currently offline.";
   }
-
-  // Invalid API key
-  if (err.status === 401) {
-    return "⚠️ Jarvis authentication failed.";
-  }
-
-  // Model/API issue
-  if (err.status === 404) {
-    return "⚠️ Jarvis model configuration error.";
-  }
-
-  // Generic fallback
-  return "⚠️ Jarvis is currently offline.";
 }
+
 module.exports = askJarvis;
