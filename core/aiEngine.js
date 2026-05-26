@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const OpenAI = require("openai");
 
 const client = new OpenAI({
@@ -6,6 +8,7 @@ const client = new OpenAI({
 
 async function askJarvis(prompt) {
   try {
+
     const response = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
@@ -25,6 +28,7 @@ async function askJarvis(prompt) {
     return response.choices[0].message.content;
 
   } catch (err) {
+
     console.log("JARVIS ERROR:", err);
 
     return "⚠️ Jarvis is currently offline.";
