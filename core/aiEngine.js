@@ -1,31 +1,27 @@
 require("dotenv").config();
 
-const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY
+);
+
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash",
 });
 
 async function askJarvis(prompt) {
+
   try {
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are Jarvis, a smart AI assistant inside a Demon Slayer RPG Telegram bot. Keep replies short, helpful, cool, and human-like.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      max_tokens: 300,
-    });
+    const result = await model.generateContent(
+      `You are Jarvis, a smart AI assistant inside a Demon Slayer RPG Telegram bot.
+      Keep replies short, helpful, cool, and human-like.
 
-    return response.choices[0].message.content;
+      User: ${prompt}`
+    );
+
+    return result.response.text();
 
   } catch (err) {
 
