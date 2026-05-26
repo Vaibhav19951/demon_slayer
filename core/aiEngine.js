@@ -23,12 +23,26 @@ async function askJarvis(prompt) {
 
     return result.response.text();
 
-  } catch (err) {
+} catch (err) {
 
-    console.log("JARVIS ERROR:", err);
+  console.log("JARVIS ERROR:", err);
 
-    return "⚠️ Jarvis is currently offline.";
+  // Gemini quota exceeded
+  if (err.status === 429) {
+    return "⚠️ Jarvis is overloaded right now. Try again in a moment.";
   }
-}
 
+  // Invalid API key
+  if (err.status === 401) {
+    return "⚠️ Jarvis authentication failed.";
+  }
+
+  // Model/API issue
+  if (err.status === 404) {
+    return "⚠️ Jarvis model configuration error.";
+  }
+
+  // Generic fallback
+  return "⚠️ Jarvis is currently offline.";
+}
 module.exports = askJarvis;
