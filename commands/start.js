@@ -49,15 +49,34 @@ module.exports = (bot) => {
     }
 
     // =========================
-    // 🚀 /START (PM ONLY)
+    // 🚀 /START (HANDLES BOTH GROUP & PM)
     // =========================
     bot.onText(/\/start/, async (msg) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
 
-        // ❌ GROUP IGNORE (silent)
-        if (msg.chat.type !== "private") return;
+        // ✨ NEW FEATURE: Agar koi player GROUP me /start karega toh yeh message jayega
+        if (msg.chat.type !== "private") {
+            // Bot ka username nikalne ke liye taaki direct DM link ban sake
+            const botInfo = await bot.getMe();
+            const botUsername = botInfo.username;
 
+            return bot.sendMessage(chatId, 
+                `❌ *Hey ${msg.from.first_name || "Slayer"}, you cannot start your journey inside the group!* \n\n` +
+                `Please click the button below to start the bot in private DM.`,
+                {
+                    parse_mode: "Markdown",
+                    reply_to_message_id: msg.message_id, // Player ke message par reply karega
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: "🚀 Start in DM", url: `https://t.me/${botUsername}?start=true` }]
+                        ]
+                    }
+                }
+            );
+        }
+
+        // 🔒 PRIVATE CHAT (DM) LOGIC CONTINUES BELOW...
         let db = getDB();
 
         // Already registered check
@@ -117,7 +136,6 @@ module.exports = (bot) => {
         if (data.startsWith("start_join_verify:")) {
             const originalId = data.split(":")[1];
 
-            // Safety fallback: Agar originalId fetch nahi ho pa rahi, toh callerId ko use karega dashboard error hatane ke liye
             const targetId = originalId && originalId !== "undefined" ? originalId : callerId;
 
             if (targetId !== callerId) {
@@ -136,10 +154,8 @@ module.exports = (bot) => {
                 });
             }
 
-            // Purane confirmation ko delete karo safely
             await bot.deleteMessage(chatId, messageId).catch(() => {});
 
-            // Verification success hone ke baad character panel bhej rahe hain
             return bot.sendPhoto(chatId, START_IMG, {
                 caption: "✅ VERIFIED! Choose your path:",
                 reply_markup: {
