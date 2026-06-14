@@ -288,5 +288,6 @@ bot.setMyCommands([
   { command: "summon", description: "🌌 Perform legendary breathing summon" },
   { command: "profile", description: "👤 View your Slayer Identity Status" },
   { command: "upgrade", description: "⚡ Awaken cards using special essence" },
-  { command: "premium", description: "👑 Enter the God-Tier Premium Shop" }
+  { command: "premium", description: "👑 Enter the God-Tier Premium Shop" },
+  { command: "switch", description: "switching worlds" }
 ]).catch(err => console.log("❌ Navigation Grid Error:", err.message));
