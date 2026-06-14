@@ -1,4 +1,5 @@
 module.exports = (bot)=>{
+console.log("switch loaded");
 
 
 bot.command("switch",(ctx)=>{
