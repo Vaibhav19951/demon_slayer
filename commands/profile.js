@@ -2,6 +2,13 @@
  * VELIX OS V2.5 | STRICT SECURITY PROFILE HUB [ENGLISH VERSION]
  * Fully Integrated with Centralized Ledger Architecture
  * Concurrency Proof (2000+ Active Users)
+ *
+ * 🔧 FIXED (by Claude):
+ *  1) sanitizeStats + buildMainCaption now read "xp" (matches core/index.js),
+ *     so the profile actually shows real experience instead of always 0.
+ *  2) callback_query filter is now strict (^(main|inv|char|gld)_), so this
+ *     handler no longer fires on battle_attack_/battle_run_ buttons and
+ *     spams the "not your dashboard" alert during combat.
  */
 
 const fs = require("fs");
@@ -29,7 +36,7 @@ const sanitizeStats = (s) => {
     crystals: Math.max(0, parseInt(stats.crystals) || 0),
     mythic: Math.max(0, parseInt(stats.mythic) || 0),
     level: Math.max(1, parseInt(stats.level) || 1),
-    exp: Math.max(0, parseInt(stats.exp) || 0),
+    xp: Math.max(0, parseInt(stats.xp) || 0), // 🔧 FIXED: was stats.exp
     guildId: stats.guildId || null,
     inventory: Array.isArray(stats.inventory) ? stats.inventory : (stats.owned_characters || []),
     materials: stats.materials && typeof stats.materials === 'object' ? stats.materials : {},
@@ -53,7 +60,7 @@ const buildMainCaption = (username, stats, userGuild) => {
 
 📈 **RANK STATUS:**
 ├ 🔺 **Slayer Level:** \`Tier ${stats.level}\`
-└ 🧪 **Experience:** \`${stats.exp} XP\`
+└ 🧪 **Experience:** \`${stats.xp} XP\`
 
 💰 **ASSET WALLET:**
 ├ 🪙 **Crow Coins:** \`${stats.coins.toLocaleString()}\`
@@ -100,8 +107,12 @@ module.exports = (bot) => {
 
   // Inline Button Click Handler with Strict Security Lock
   bot.on("callback_query", async (query) => {
-    if (!query.data.includes("_")) return;
-    
+    // 🔧 FIXED: strict prefix match instead of "includes('_')"
+    // Old code matched ANY callback_data containing "_" (e.g. battle_attack_123),
+    // which caused this handler to fire on battle buttons too and show a
+    // false "not your dashboard" alert during combat.
+    if (!/^(main|inv|char|gld)_/.test(query.data)) return;
+
     const [action, targetUserId] = query.data.split("_");
     const clickerId = query.from.id.toString(); 
 
