@@ -2,6 +2,11 @@
  * VELIX OS V2.5 - DEMON SLAYER HIGH-PERFORMANCE BATTLE SYSTEM
  * Optimized for High Concurrency (2000+ Active Users)
  * Synchronized with Core Global Ledger System
+ *
+ * 🔧 FIXED (by Claude): player.exp -> player.xp
+ *    Reason: core/index.js stores experience in the "xp" field and
+ *    deletes any "exp" field on load. Writing to "exp" here caused
+ *    battle XP to be silently wiped on the next bot restart/reload.
  */
 
 const demons = require("../asset/demons");
@@ -174,15 +179,17 @@ module.exports = (bot) => {
                 const player = bot.getPlayerData(userId);
                 if (player) {
                     player.coins += session.reward;
-                    if (player.exp === undefined) player.exp = 0;
-                    player.exp += session.exp;
+
+                    // 🔧 FIXED: use "xp" (matches core/index.js), not "exp"
+                    if (player.xp === undefined) player.xp = 0;
+                    player.xp += session.exp;
 
                     // Dynamic level ups verification logic
                     const currentLevel = player.level || 1;
                     const expRequirement = currentLevel * 250;
-                    if (player.exp >= expRequirement) {
+                    if (player.xp >= expRequirement) {
                         player.level = currentLevel + 1;
-                        player.exp -= expRequirement;
+                        player.xp -= expRequirement;
                         logReport += `🔥 **RANK AWAKENING!** You advanced to Level TIER \`${player.level}\`!\n`;
                     }
 
@@ -237,7 +244,7 @@ module.exports = (bot) => {
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
                 `${logReport}\n` +
                 `🩸 **Demon Vitality:** \`[ ${Math.max(0, demon.hp)} HP ]\`\n` +
-                `💚 **Your Vitality:** \`[ ${session.playerHp} / ${session.session ? session.playerMaxHp : session.playerMaxHp} HP ]\`\n` +
+                `💚 **Your Vitality:** \`[ ${session.playerHp} / ${session.playerMaxHp} HP ]\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `⚡ *Recalibrate your breathing strategy! Choose the next step:*`;
 
