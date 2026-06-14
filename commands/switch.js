@@ -1,10 +1,14 @@
-module.exports = (bot)=>{
-console.log("switch loaded");
+module.exports = (bot) => {
 
 
-bot.command("switch",(ctx)=>{
+// SWITCH COMMAND
 
-ctx.reply(
+bot.onText(/\/switch/, async (msg) => {
+
+const chatId = msg.chat.id;
+
+bot.sendMessage(
+chatId,
 "🌌 Choose your world to enter:",
 {
 reply_markup:{
@@ -33,18 +37,21 @@ callback_data:"world_solo"
 
 
 
-bot.on("callback_query", async (ctx)=>{
+
+// BUTTON HANDLER
+
+bot.on("callback_query", async (query)=>{
 
 
-const data = ctx.callbackQuery.data;
+const data = query.data;
 
-const userId = ctx.callbackQuery.from.id;
-
-const player = bot.getPlayerData(userId);
+const userId = query.from.id;
 
 
+if(data === "world_demon"){
 
-if(data==="world_demon"){
+
+let player = bot.getPlayerData(userId);
 
 
 player.anime = "Demon Slayer";
@@ -53,19 +60,19 @@ player.anime = "Demon Slayer";
 bot.savePlayerData(userId, player);
 
 
-await ctx.answerCbQuery();
+
+await bot.answerCallbackQuery(query.id);
 
 
-ctx.replyWithPhoto(
+
+bot.sendPhoto(
+userId,
 
 "https://i.pinimg.com/736x/81/c7/9c/81c79cb8cfcb320fb7890403fc9bc81d.jpg",
 
 {
-
 caption:
-
 "⚔️ Welcome to Demon Slayer World!\n\n✅ You have successfully arrived in Demon Slayer World."
-
 }
 
 );
@@ -76,7 +83,10 @@ caption:
 
 
 
-if(data==="world_solo"){
+if(data === "world_solo"){
+
+
+let player = bot.getPlayerData(userId);
 
 
 player.anime = "Solo Leveling";
@@ -85,26 +95,25 @@ player.anime = "Solo Leveling";
 bot.savePlayerData(userId, player);
 
 
-await ctx.answerCbQuery();
+
+await bot.answerCallbackQuery(query.id);
 
 
-ctx.replyWithPhoto(
+
+bot.sendPhoto(
+userId,
 
 "https://i.pinimg.com/736x/f9/72/26/f972266437c90a1021f36b713092deb6.jpg",
 
 {
-
 caption:
-
 "⚡ Welcome to Solo Leveling World!\n\n✅ You have successfully arrived in Solo Leveling World."
-
 }
 
 );
 
 
 }
-
 
 
 });
