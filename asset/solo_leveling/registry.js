@@ -1,4 +1,4 @@
-const demonSlayerCharacters = require("./assets");
+const demonSlayerCharacters = require("./asset");
 const demonSlayerMonsters = require("./demons");
 const demonSlayerWeapons = require("./weapons");
 const demonSlayerMythical = require("./mythical");
