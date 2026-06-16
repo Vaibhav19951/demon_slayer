@@ -12,7 +12,7 @@ const {
   getMonsters,
   getWeapons,
   getMythical
-} = require("../asset/registry");
+} = require("../asset/solo_leveling/registry");
 
 
 
