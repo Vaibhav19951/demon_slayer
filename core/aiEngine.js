@@ -12,7 +12,7 @@ const {
   getMonsters,
   getWeapons,
   getMythical
-} = require("./assets/registry");
+} = require("../assets/registry");
 
 
 
