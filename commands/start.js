@@ -176,26 +176,6 @@ module.exports = (bot) => {
   });
 };
 
-// =========================================
-// HELPER: Show character select screen
-// =========================================
-function showCharSelect(bot, chatId, userId, img) {
-  return bot.sendPhoto(chatId, img, {
-    caption:
-      `⚔️ *WELCOME TO THE DEMON CORPS*\n\n` +
-      `Choose your starting character:\n\n` +
-      `👦 *Tanjiro* — Balanced fighter\n` +
-      `👧 *Nezuko* — Speed specialist`,
-    parse_mode: "Markdown",
-    reply_markup: {
-      inline_keyboard: [[
-        { text: "👦 Tanjiro", callback_data: `start_char:tanjiro:${userId}` },
-        { text: "👧 Nezuko", callback_data: `start_char:nezuko:${userId}` }
-      ]]
-    }
-  });
-}
-// =========================
 const getDB = () => {
     try {
         if (!fs.existsSync(playerFile)) {
