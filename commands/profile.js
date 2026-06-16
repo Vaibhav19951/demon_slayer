@@ -1,190 +1,244 @@
-/**
- * VELIX OS V2.5 | STRICT SECURITY PROFILE HUB [ENGLISH VERSION]
- * Fully Integrated with Centralized Ledger Architecture
- * Concurrency Proof (2000+ Active Users)
- *
- * 🔧 FIXED (by Claude):
- *  1) sanitizeStats + buildMainCaption now read "xp" (matches core/index.js),
- *     so the profile actually shows real experience instead of always 0.
- *  2) callback_query filter is now strict (^(main|inv|char|gld)_), so this
- *     handler no longer fires on battle_attack_/battle_run_ buttons and
- *     spams the "not your dashboard" alert during combat.
- */
-
 const fs = require("fs");
 const path = require("path");
+const { getPlayer, savePlayer, getWorldData } = require("../data/players");
+const { getRankByLevel, isInjured } = require("../asset/solo_leveling/ranks");
+
 const guildFile = path.join(process.cwd(), "data", "guild.json");
 
-const PROFILE_PHOTO = "https://i.pinimg.com/736x/52/f5/97/52f597b5ed03c1f59f54aa656be46c7d.jpg";
-
-// Safe Read for Guild Data only (Player data handles via Core Ledger Engine)
 const safeReadGuilds = () => {
-  try { 
-    if (fs.existsSync(guildFile)) return JSON.parse(fs.readFileSync(guildFile, "utf8")); 
-  } catch (e) {
-    console.error("❌ Guild read mismatch:", e.message);
-  }
+  try {
+    if (fs.existsSync(guildFile)) return JSON.parse(fs.readFileSync(guildFile, "utf8"));
+  } catch (e) {}
   return {};
 };
 
-// Centralized Sanitize Matrix ensuring data safety layers
-const sanitizeStats = (s) => {
-  let stats = s || {};
-  return {
-    coins: Math.max(0, parseInt(stats.coins) || 0),
-    bank: Math.max(0, parseInt(stats.bank) || 0),
-    crystals: Math.max(0, parseInt(stats.crystals) || 0),
-    mythic: Math.max(0, parseInt(stats.mythic) || 0),
-    level: Math.max(1, parseInt(stats.level) || 1),
-    xp: Math.max(0, parseInt(stats.xp) || 0), // 🔧 FIXED: was stats.exp
-    guildId: stats.guildId || null,
-    inventory: Array.isArray(stats.inventory) ? stats.inventory : (stats.owned_characters || []),
-    materials: stats.materials && typeof stats.materials === 'object' ? stats.materials : {},
-    active_task: stats.active_task || null
-  };
+// =========================================
+// PROFILE BUILDER
+// =========================================
+const buildProfile = (player, username, guildName) => {
+  const world = player.anime || "Demon Slayer";
+  const worldData = getWorldData(player);
+  const rankInfo = getRankByLevel(worldData.level || 1, world);
+
+  const injured = isInjured(worldData);
+  const injuredText = injured
+    ? `\n⛔ *INJURED* — Stats at 50% (${Math.ceil((worldData.injured_until - Date.now()) / 60000)} min left)`
+    : "";
+
+  // Pet display
+  const activePet = player.pets?.find(p => p.id === player.active_pet);
+  const petText = activePet
+    ? `🐾 *Pet:* \`${activePet.name}\` (${activePet.rarity})`
+    : `🐾 *Pet:* \`None\``;
+
+  // Title display
+  const titleText = player.active_title
+    ? `🏅 *Title:* \`${player.active_title}\``
+    : `🏅 *Title:* \`None\``;
+
+  // World emoji
+  const worldEmoji = world === "Solo Leveling" ? "⚡" : "⚔️";
+
+  // Shadow count (SL only)
+  const shadowText = world === "Solo Leveling"
+    ? `\n👥 *Shadow Army:* \`${worldData.shadows?.length || 0} soldiers\``
+    : "";
+
+  // XP bar
+  const xp = worldData.xp || 0;
+  const xpNeeded = worldData.xp_needed || 100;
+  const xpPercent = Math.min(Math.floor((xp / xpNeeded) * 10), 10);
+  const xpBar = "█".repeat(xpPercent) + "░".repeat(10 - xpPercent);
+
+  return (
+    `${worldEmoji} *SLAYER PROFILE — ${world.toUpperCase()}*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `👤 *Name:* \`${username}\`\n` +
+    `🏰 *Guild:* \`${guildName}\`\n` +
+    `${titleText}\n` +
+    `${petText}\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📊 *RANK STATUS*\n` +
+    `${rankInfo.color} *Rank:* \`${worldData.rank || rankInfo.name}\`\n` +
+    `📈 *Level:* \`${worldData.level || 1}\`\n` +
+    `🧪 *XP:* \`${xp}/${xpNeeded}\`\n` +
+    `[${xpBar}]\n` +
+    `🎴 *Character:* \`${worldData.character || "None"}\`\n` +
+    `🎒 *Cards:* \`${worldData.inventory?.length || 0}\`${shadowText}${injuredText}\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `💰 *WALLET*\n` +
+    `🪙 *Coins:* \`${(player.coins || 0).toLocaleString()}\`\n` +
+    `🏦 *Bank:* \`${(player.bank || 0).toLocaleString()}\`\n` +
+    `💎 *Crystals:* \`${player.crystals || 0}\`\n` +
+    `✨ *Mythic Tokens:* \`${player.mythic || 0}\`\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `📅 *Streak:* \`${player.streak || 0} days\`\n` +
+    `⚔️ *Battles Won:* \`${player.battles_won || 0}\`\n` +
+    `💀 *Total Kills:* \`${player.total_kills || 0}\`\n` +
+    `🏰 *Highest Floor:* \`${player.highest_dungeon_floor || 0}\``
+  );
 };
 
-// Helper function to build Main Dashboard Layout
-const buildMainCaption = (username, stats, userGuild) => {
-  let taskText = "\n_No active mission. Type /task to assign one!_";
-  if (stats.active_task) {
-    const t = stats.active_task;
-    const statusIcon = t.completed ? "✅" : "⏳";
-    taskText = `\n📜 **Mission:** ${t.desc}\n📊 **Progress:** [${t.progress}/${t.target}] ${statusIcon}`;
-  }
+// =========================================
+// INVENTORY VIEW
+// =========================================
+const buildInventory = (player) => {
+  const worldData = getWorldData(player);
+  const inventory = worldData.inventory || [];
+  const weapons = worldData.owned_weapons || [];
+  const potions = player.potions || {};
 
-  return `⚔️ **VELIX OS | SLAYER PROFILE HUB**
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-👤 **NAME:** \`${username.toUpperCase()}\`
-🏰 **GUILD:** \`${userGuild}\`
+  let cardText = inventory.length === 0
+    ? "_No cards yet! Use /spin to summon._"
+    : inventory.slice(0, 10).map((item, i) => {
+        const name = typeof item === "string" ? item : item.name;
+        const lvl = typeof item === "string" ? 1 : (item.level || 1);
+        return `\`${i + 1}.\` 🎴 **${name}** [Lv.${lvl}]`;
+      }).join("\n") + (inventory.length > 10 ? `\n_...and ${inventory.length - 10} more_` : "");
 
-📈 **RANK STATUS:**
-├ 🔺 **Slayer Level:** \`Tier ${stats.level}\`
-└ 🧪 **Experience:** \`${stats.xp} XP\`
+  let weaponText = weapons.length === 0
+    ? "_No weapons owned._"
+    : weapons.slice(0, 5).map(w => {
+        const name = typeof w === "string" ? w : w.name;
+        return `⚔️ ${name}`;
+      }).join("\n");
 
-💰 **ASSET WALLET:**
-├ 🪙 **Crow Coins:** \`${stats.coins.toLocaleString()}\`
-├ 🏦 **Corps Vault:** \`${stats.bank.toLocaleString()}\`
-├ 💎 **Crystals:** \`${stats.crystals.toLocaleString()}\`
-└ ✨ **Mythic Tokens:** \`${stats.mythic.toLocaleString()}\`
+  let potionText = Object.entries(potions)
+    .filter(([, count]) => count > 0)
+    .map(([key, count]) => `🧪 ${key.replace(/_/g, " ")}: \`x${count}\``)
+    .join("\n") || "_No potions._";
 
-📋 **DAILY MISSION EXPEDITION:**${taskText}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🦅 *Keep ascending your breathing style forms.*`;
+  return (
+    `🎒 *INVENTORY*\n` +
+    `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+    `🃏 *Cards (${inventory.length}):*\n${cardText}\n\n` +
+    `⚔️ *Weapons (${weapons.length}):*\n${weaponText}\n\n` +
+    `🧪 *Potions:*\n${potionText}`
+  );
 };
 
+// =========================================
+// PET VIEW
+// =========================================
+const buildPets = (player) => {
+  const pets = player.pets || [];
+  if (pets.length === 0) return `🐾 *PETS*\n━━━━━━━━━━━━━━━━━━━━━━━━\n_No pets yet! Use /incubate to hatch an egg._`;
+
+  const petList = pets.map((p, i) => {
+    const active = p.id === player.active_pet ? " ✅" : "";
+    const hungry = p.hunger <= 0 ? " 😵 STARVING" : p.hunger <= 30 ? " 😟 Hungry" : "";
+    return `\`${i + 1}.\` ${p.emoji || "🐾"} **${p.name}** [${p.rarity}]${active}${hungry}\n     └ ATK+${p.atk_bonus || 0} | Skill: ${p.skill || "None"}`;
+  }).join("\n\n");
+
+  return `🐾 *PETS (${pets.length})*\n━━━━━━━━━━━━━━━━━━━━━━━━\n${petList}`;
+};
+
+// =========================================
+// PROFILE IMAGES PER WORLD
+// =========================================
+const PROFILE_IMAGES = {
+  "Demon Slayer": "https://i.pinimg.com/736x/52/f5/97/52f597b5ed03c1f59f54aa656be46c7d.jpg",
+  "Solo Leveling": "https://i.pinimg.com/1200x/7c/12/fc/7c12fcbe18cb7c7201a10c56a275820a.jpg"
+};
+
+// =========================================
+// MODULE EXPORT
+// =========================================
 module.exports = (bot) => {
-  
-  // Command: /profile
+
   bot.onText(/\/profile/, async (msg) => {
     const chatId = msg.chat.id;
-    const userId = msg.from.id.toString(); 
-    
-    // Core Engine Centralized Data Fetch
-    const rawPlayer = bot.getPlayerData(userId);
+    const userId = msg.from.id.toString();
+    const player = getPlayer(userId);
     const guilds = safeReadGuilds();
-    
-    const stats = sanitizeStats(rawPlayer);
-    const userGuild = stats.guildId && guilds[stats.guildId] ? guilds[stats.guildId].name : "No Guild Joined";
+    const guildName = player.guildId && guilds[player.guildId] ? guilds[player.guildId].name : "No Guild";
+    const world = player.anime || "Demon Slayer";
 
-    const mainCaption = buildMainCaption(msg.from.first_name, stats, userGuild);
+    const caption = buildProfile(player, msg.from.first_name, guildName);
 
     try {
-      await bot.sendPhoto(chatId, PROFILE_PHOTO, {
-        caption: mainCaption, 
+      await bot.sendPhoto(chatId, PROFILE_IMAGES[world] || PROFILE_IMAGES["Demon Slayer"], {
+        caption,
         parse_mode: "Markdown",
-        reply_markup: { 
+        reply_markup: {
           inline_keyboard: [
-            [{ text: "🎒 Inventory Bag", callback_data: `inv_${userId}` }, { text: "👑 Card Roster", callback_data: `char_${userId}` }], 
-            [{ text: "🏰 Guild Center", callback_data: `gld_${userId}` }, { text: "🔄 Refresh Hub", callback_data: `main_${userId}` }]
-          ] 
+            [
+              { text: "🎒 Inventory", callback_data: `prf_inv:${userId}` },
+              { text: "🐾 Pets", callback_data: `prf_pet:${userId}` }
+            ],
+            [
+              { text: "🏰 Guild", callback_data: `prf_gld:${userId}` },
+              { text: "🔄 Refresh", callback_data: `prf_main:${userId}` }
+            ]
+          ]
         }
       });
     } catch (err) {
-      console.error("❌ Profile layout push dropped:", err.message);
+      console.error("❌ Profile error:", err.message);
+      bot.sendMessage(chatId, caption, { parse_mode: "Markdown" });
     }
   });
 
-  // Inline Button Click Handler with Strict Security Lock
+  // =========================================
+  // CALLBACK HANDLER
+  // =========================================
   bot.on("callback_query", async (query) => {
-    // 🔧 FIXED: strict prefix match instead of "includes('_')"
-    // Old code matched ANY callback_data containing "_" (e.g. battle_attack_123),
-    // which caused this handler to fire on battle buttons too and show a
-    // false "not your dashboard" alert during combat.
-    if (!/^(main|inv|char|gld)_/.test(query.data)) return;
+    if (!/^prf_(main|inv|pet|gld):/.test(query.data)) return;
 
-    const [action, targetUserId] = query.data.split("_");
-    const clickerId = query.from.id.toString(); 
+    const [actionPart, userId] = query.data.split(":");
+    const action = actionPart.replace("prf_", "");
+    const clickerId = query.from.id.toString();
 
-    // 🔥 SECURITY SHIELD: Blocks external clicks completely 
-    if (clickerId !== targetUserId) {
-      return bot.answerCallbackQuery(query.id, { 
-        text: "🏮 This is not your personal dashboard! Run /profile to deploy your own dashboard panel.", 
-        show_alert: true 
+    if (clickerId !== userId) {
+      return bot.answerCallbackQuery(query.id, {
+        text: "❌ This is not your profile!",
+        show_alert: true
       });
     }
 
-    // Dynamic Central Sync to pull latest data updates
-    const rawPlayer = bot.getPlayerData(targetUserId);
+    const player = getPlayer(userId);
     const guilds = safeReadGuilds();
-    
-    const stats = sanitizeStats(rawPlayer);
-    const userGuild = stats.guildId && guilds[stats.guildId] ? guilds[stats.guildId].name : "No Guild Joined";
-    let updatedCaption = "";
+    const guildName = player.guildId && guilds[player.guildId] ? guilds[player.guildId].name : "No Guild";
+
+    let caption = "";
 
     if (action === "main") {
-      updatedCaption = buildMainCaption(query.from.first_name, stats, userGuild);
-    } 
-    else if (action === "inv") {
-      let essenceEntries = Object.entries(stats.materials).filter(([_, count]) => (parseInt(count) || 0) > 0);
-      let materialText = "";
-
-      if (essenceEntries.length === 0) {
-        materialText = "_Your item bags are completely empty! Pull duplicate slayers to extract components._";
-      } else {
-        materialText = essenceEntries.map(([key, value]) => `• 🧪 **${key.replace('_', ' ').toUpperCase()}:** \`${value}\` pcs`).join("\n");
-      }
-
-      updatedCaption = `🎒 **VELIX OS | STORAGE BAG**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${materialText}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n💡 *Use these character essences to unleash rank ascension via /upgrade.*`;
-    }
-    else if (action === "char") {
-      let characterText = "";
-
-      if (stats.inventory.length === 0) {
-        characterText = "_No slayers recruited yet! Use the summoning system to extract rare warrior units._";
-      } else {
-        characterText = stats.inventory.map((item, idx) => {
-          let cName = typeof item === "string" ? item : (item.name || "Unknown Slayer");
-          let cLevel = typeof item === "string" ? 1 : (parseInt(item.level) || 1);
-          let levelStars = "⭐".repeat(Math.min(5, cLevel));
-          let powerMetric = cLevel * 150;
-
-          return `\`${idx + 1}.\` 👤 **${cName}**\n     ┗ 💠 [Lv. ${cLevel}] ${levelStars} | ⚡ \`${powerMetric} CP\``;
-        }).join("\n\n");
-      }
-
-      updatedCaption = `👑 **VELIX OS | WARRIOR ROSTER**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${characterText}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n💡 *To ascend any character rank: Type \`/upgrade <name>\` in chat.*`;
-    }
-    else if (action === "gld") {
-      updatedCaption = `🏰 **VELIX OS | GUILD HUB**\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔹 **Current Faction:** \`${userGuild}\`\n🔹 **Guild Hex ID:** \`${stats.guildId || "None"}\`\n\n_Cooperate with your guild alliance members to unlock massive vault multiplier milestones!_`;
+      caption = buildProfile(player, query.from.first_name, guildName);
+    } else if (action === "inv") {
+      caption = buildInventory(player);
+    } else if (action === "pet") {
+      caption = buildPets(player);
+    } else if (action === "gld") {
+      caption =
+        `🏰 *GUILD INFO*\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `🔹 *Guild:* \`${guildName}\`\n` +
+        `🔹 *Guild ID:* \`${player.guildId || "None"}\`\n\n` +
+        `_Use /guild to manage your guild._`;
     }
 
     try {
-      await bot.editMessageCaption(updatedCaption, { 
-        chat_id: query.message.chat.id, 
-        message_id: query.message.message_id, 
+      await bot.editMessageCaption(caption, {
+        chat_id: query.message.chat.id,
+        message_id: query.message.message_id,
         parse_mode: "Markdown",
-        reply_markup: { 
+        reply_markup: {
           inline_keyboard: [
-            [{ text: "🎒 Inventory Bag", callback_data: `inv_${targetUserId}` }, { text: "👑 Card Roster", callback_data: `char_${targetUserId}` }], 
-            [{ text: "🏰 Guild Center", callback_data: `gld_${targetUserId}` }, { text: "🔄 Main Hub", callback_data: `main_${targetUserId}` }]
-          ] 
+            [
+              { text: "🎒 Inventory", callback_data: `prf_inv:${userId}` },
+              { text: "🐾 Pets", callback_data: `prf_pet:${userId}` }
+            ],
+            [
+              { text: "🏰 Guild", callback_data: `prf_gld:${userId}` },
+              { text: "🔄 Refresh", callback_data: `prf_main:${userId}` }
+            ]
+          ]
         }
       });
     } catch (err) {
-      console.log("⚠️ Interface layout refresh skipped (No structural updates).");
+      console.log("⚠️ Profile refresh skipped");
     }
-    
+
     bot.answerCallbackQuery(query.id);
   });
 };
