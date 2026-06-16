@@ -12,7 +12,7 @@ const {
   getMonsters,
   getWeapons,
   getMythical
-} = require("../asset/solo_leveling/registry");
+} = require("../asset/registry");
 
 
 
@@ -54,7 +54,7 @@ function searchAnime(query){
 
   return database.find(item => {
 
-    const name = item.name || item.id || "";
+    const name = item.name || "";
 
     return name.toLowerCase().includes(query);
 
@@ -70,8 +70,10 @@ function searchAnime(query){
 
 async function askJarvis(prompt,userId=null){
 
-
 try{
+
+
+console.log("🤖 JARVIS INPUT:", prompt);
 
 
 if(!prompt)
@@ -79,10 +81,7 @@ return "⚠️ No input received.";
 
 
 
-// =========================
-// 🔥 CHECK OWN DATABASE FIRST
-// =========================
-
+// 🔥 CHECK DATABASE FIRST
 
 const asset = searchAnime(prompt);
 
@@ -90,13 +89,15 @@ const asset = searchAnime(prompt);
 
 if(asset){
 
+console.log("🔥 ASSET FOUND:", asset.name);
+
 
 return `
 
-⚔️ ${asset.name || "Unknown"}
+⚔️ ${asset.name}
 
 🌌 Anime:
-${asset.anime || "Anime Universe"}
+${asset.anime || "Unknown"}
 
 ⭐ Rarity:
 ${asset.rarity || "Unknown"}
@@ -108,7 +109,7 @@ ${asset.power || "Unknown"}
 ${asset.skills?.join(", ") || "Unknown"}
 
 🖼️ Image:
-${asset.image || "No Image Available"}
+${asset.image || "No Image"}
 
 `;
 
@@ -117,29 +118,23 @@ ${asset.image || "No Image Available"}
 
 
 
-
 // =========================
-// 🤖 GROQ AI FALLBACK
+// 🤖 GROQ FALLBACK
 // =========================
 
 
 const completion = await groq.chat.completions.create({
 
-
 model:"llama-3.1-8b-instant",
-
-
 
 messages:[
 
 {
-
 role:"system",
 
 content:
-
 `
-You are Jarvis, an AI assistant inside an Anime RPG Telegram bot.
+You are Jarvis, an Anime RPG AI assistant.
 
 You know:
 - Demon Slayer
@@ -152,45 +147,33 @@ monsters,
 powers,
 anime lore.
 
-Keep replies short, cool and helpful.
-Do not write huge essays.
+Keep replies short and cool.
 `
-
 },
 
 
 {
-
 role:"user",
-
 content:prompt
-
 }
 
-
 ],
-
 
 temperature:0.7,
 
 max_tokens:250
 
-
 });
 
 
 
-return completion
-.choices[0]
-.message
-.content;
+return completion.choices[0].message.content;
 
 
 
 }
 
 catch(err){
-
 
 console.log(
 "🔥 JARVIS ERROR:",
@@ -201,8 +184,6 @@ err.message
 return "⚠️ Jarvis is offline right now.";
 
 }
-
-
 
 }
 
