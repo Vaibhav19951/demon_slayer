@@ -289,5 +289,11 @@ bot.setMyCommands([
   { command: "profile", description: "👤 View your Slayer Identity Status" },
   { command: "upgrade", description: "⚡ Awaken cards using special essence" },
   { command: "premium", description: "👑 Enter the God-Tier Premium Shop" },
-  { command: "switch", description: "switching worlds" }
+  { command: "switch", description: "switching worlds" },
+  { command: "hunt", description: "to hunt" },
+  { command: "potion", description: "to use potion" },#
+  { command: "dungeon", description: "to enter in dungeon" },
+  { command: "gate", description: "to enter in gates" },
+  { command: "shadow", description: "view your shadow" },
+  { command: "rankup", description: "rankup" },
 ]).catch(err => console.log("❌ Navigation Grid Error:", err.message));
