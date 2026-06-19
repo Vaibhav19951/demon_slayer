@@ -291,7 +291,7 @@ bot.setMyCommands([
   { command: "premium", description: "👑 Enter the God-Tier Premium Shop" },
   { command: "switch", description: "switching worlds" },
   { command: "hunt", description: "to hunt" },
-  { command: "potion", description: "to use potion" },#
+  { command: "potion", description: "to use potion" },
   { command: "dungeon", description: "to enter in dungeon" },
   { command: "gate", description: "to enter in gates" },
   { command: "shadow", description: "view your shadow" },
