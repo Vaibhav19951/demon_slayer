@@ -295,5 +295,5 @@ bot.setMyCommands([
   { command: "dungeon", description: "to enter in dungeon" },
   { command: "gate", description: "to enter in gates" },
   { command: "shadow", description: "view your shadow" },
-  { command: "rankup", description: "rankup" },
+  { command: "rankup", description: "rankup" }
 ]).catch(err => console.log("❌ Navigation Grid Error:", err.message));
